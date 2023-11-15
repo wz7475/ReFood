@@ -8,14 +8,14 @@ pipeline {
             //         sh 'pip -r requirements.txt'
             //     }
             // }
-            agent { docker { image 'python:3.12.0-alpine3.18' } }
+            agent { docker { image 'python:3.9' } }
             steps {
                     sh 'cd hello-world'
                     sh 'pip -r requirements.txt'
             }
         }
         stage('run_tests') {
-    	    agent { docker { image 'python:3.12.0-alpine3.18' } }
+    	    agent { docker { image 'python:3.9' } }
             steps {
                     sh 'cd hello-world'
                     sh 'pytest test_main.py'

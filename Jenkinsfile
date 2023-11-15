@@ -3,7 +3,7 @@ pipeline {
     stages {
         stage('test-pipeline-trigger') {
             steps {
-                sh 'echo "TEST 4, fix settings in gitlab integration with jenkins"'
+                sh 'echo "TEST 4, fix settings in gitlab integration with jenkins forgot to save"'
             }
         }
     }

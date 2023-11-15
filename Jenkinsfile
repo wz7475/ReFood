@@ -3,7 +3,7 @@ pipeline {
     stages {
         stage('test-pipeline-trigger') {
             steps {
-                sh 'echo "TEST 3, trying to trigger Jenkins from push"'
+                sh 'echo "TEST 4, fix settings in gitlab integration with jenkins"'
             }
         }
     }

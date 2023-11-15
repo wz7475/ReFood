@@ -3,7 +3,7 @@ pipeline {
     stages {
         stage('test-pipeline-trigger') {
             steps {
-                sh 'TEST1'
+                sh 'TEST 2, properly configure pipeline'
             }
         }
     }

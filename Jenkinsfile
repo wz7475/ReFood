@@ -3,8 +3,8 @@ pipeline {
     stages {
         stage('print variables') {
             steps{
-                sh 'ls'
                 sh 'ls /'
+                sh 'ls /certs'
                 sh 'ls /certs/client'
             }
         }

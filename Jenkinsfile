@@ -3,7 +3,7 @@ pipeline {
     stages {
         stage('test-pipeline-trigger') {
             steps {
-                sh 'echo "TEST 2, properly configure pipeline"'
+                sh 'echo "TEST 3, trying to trigger Jenkins from push"'
             }
         }
     }

@@ -1,6 +1,13 @@
 pipeline {
     agent any
     stages {
+        stage('print variables') {
+            steps{
+                sh 'ls'
+                sh 'ls /'
+                sh 'ls /certs/client'
+            }
+        }
 	    stage('setup requirements') {
             // steps {
             //     withPythonEnv('python3') {

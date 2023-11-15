@@ -2,9 +2,11 @@ pipeline {
     agent any
     stages {
 	    stage('setup requirements') {
-            withPythonEnv('python3') {
-                sh 'cd hello-world'
-                sh 'pip -r requirements.txt'
+            steps {
+                withPythonEnv('python3') {
+                    sh 'cd hello-world'
+                    sh 'pip -r requirements.txt'
+                }
             }
             // agent { docker { image 'python:3.12.0-alpine3.18' } }
             // steps {

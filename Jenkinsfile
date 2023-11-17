@@ -17,7 +17,8 @@ pipeline {
             steps {
                     sh 'cd hello-world && docker build -t hello-world-fastapi .'
                     sh 'echo "BUILD SUCCESSFUL"'
-                    sh 'echo "{$NEXUS_USER}"'
+                    sh 'export test=$NEXUS_USER'
+                    sh 'echo $test'
                     sh 'docker login maluch.mikr.us:40480 -u {$NEXUS_USER} -p {$NEXUS_PASSWORD}'
                     sh 'docker tag hello-world-fastapi maluch.mikr.us:40480/refood-docker/hello-world-fastapi:latest'
                     sh 'docker push maluch.mikr.us:40480/refood-docker/hello-world-fastapi:latest'

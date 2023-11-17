@@ -1,5 +1,9 @@
 pipeline {
     agent any
+    environment {
+        NEXUS_USER = credentials('nexus-user')
+        NEXUS_PASSWORD = credentials('nexus-password')
+    }
     stages {
 	    stage('run tests') {
             agent {
@@ -13,7 +17,7 @@ pipeline {
             steps {
                     sh 'cd hello-world && docker build -t hello-world-fastapi .'
                     sh 'echo "BUILD SUCCESSFUL"'
-                    sh 'docker login maluch.mikr.us:40480 -u admin -p 4a7a7129-3e61-4aaa-866c-c81d7e71395b'
+                    sh 'docker login maluch.mikr.us:40480 -u {$NEXUS_USER} -p {$NEXUS_PASSWORD}'
                     sh 'docker tag hello-world-fastapi maluch.mikr.us:40480/refood-docker/hello-world-fastapi:latest'
                     sh 'docker push maluch.mikr.us:40480/refood-docker/hello-world-fastapi:latest'
             }

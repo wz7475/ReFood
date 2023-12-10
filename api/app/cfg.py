@@ -1,0 +1,1 @@
+SQLALCHEMY_DATABASE_URL = "postgresql://refood:refood@my_postgres/refood_db"

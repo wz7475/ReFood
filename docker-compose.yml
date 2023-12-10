@@ -26,6 +26,11 @@ services:
       - postgres
     networks:
       - shared-network
+  
+  frontend:
+    build: ./frontend
+    ports:
+      - "8090:80"
 
 volumes:
   postgres-data:

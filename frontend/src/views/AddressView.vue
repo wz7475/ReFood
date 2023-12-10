@@ -1,11 +1,21 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { addAddress, readAddresses } from '@/api'
+import { addAddress, deleteAddress, readAddresses } from '@/api'
 
 const streetName = ref('')
 const houseNr = ref('')
 const apartamentNr = ref('')
 const city = ref('')
+
+const addresses = ref([])
+
+onMounted(async () => {
+    addresses.value = await readAddresses()
+})
+
+const addressPreviews = (address) => ({
+    title: `${address.city}, ${address.streetName}, ${address.houseNr}-${address.apartamentNr}`,
+})
 
 const submit = async () => {
     await addAddress(
@@ -18,11 +28,14 @@ const submit = async () => {
     addresses.value = await readAddresses()
 }
 
-const addresses = ref([])
+const addressToRemove = ref(null)
 
-onMounted(async () => {
+const remove = async () => {
+    await deleteAddress(addressToRemove.value.id)
+
     addresses.value = await readAddresses()
-})
+    addressToRemove.value = null
+}
 </script>
 
 <template>
@@ -74,6 +87,28 @@ onMounted(async () => {
             <h1 class="text-h4">Addresses</h1>
 
             <div>{{ JSON.stringify(addresses) }}</div>
+
+            <h1 class="text-h4">Remove address</h1>
+
+            <v-select
+                v-model="addressToRemove"
+                label="Address to remove"
+                :items="addresses"
+                :item-props="addressPreviews"
+            ></v-select>
+            <v-btn
+                min-width="164"
+                color="red"
+                @click="remove"
+            >
+                <v-icon
+                    icon="mdi-delete"
+                    size="large"
+                    start
+                />
+
+                Remove address
+            </v-btn>
         </v-responsive>
     </v-container>
 </template>

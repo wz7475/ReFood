@@ -10,6 +10,8 @@ export const readAddresses = async () => {
         .then((res) => res.json())
         .then((res) =>
             res.map((address) => ({
+                id: address.id,
+
                 streetName: address.street_name,
                 houseNr: address.house_nr,
                 apartamentNr: address.apartament_nr,

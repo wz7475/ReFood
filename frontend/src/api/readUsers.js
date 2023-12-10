@@ -9,13 +9,17 @@ export const readUsers = async () => {
     })
         .then((res) => res.json())
         .then((res) =>
-            res.map(({ name, surname, age, address_id, phone_nr, rating }) => ({
-                name,
-                surname,
-                age,
-                addressId: address_id,
-                phoneNr: phone_nr,
-                rating,
-            }))
+            res.map(
+                ({ id, name, surname, age, address_id, phone_nr, rating }) => ({
+                    id,
+
+                    name,
+                    surname,
+                    age,
+                    addressId: address_id,
+                    phoneNr: phone_nr,
+                    rating,
+                })
+            )
         )
 }

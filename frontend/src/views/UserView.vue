@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { addUser, readUsers, readAddresses } from '@/api'
+import { addUser, deleteUser, readUsers, readAddresses } from '@/api'
 
 const name = ref('')
 const surname = ref('')
@@ -33,6 +33,19 @@ onMounted(async () => {
 const addressPreviews = (address) => ({
     title: `${address.city}, ${address.streetName}, ${address.houseNr}-${address.apartamentNr}`,
 })
+
+const userPreviews = (user) => ({
+    title: `${user.name} ${user.surname}`,
+})
+
+const userToRemove = ref(null)
+
+const remove = async () => {
+    await deleteUser(userToRemove.value.id)
+
+    users.value = await readUsers()
+    userToRemove.value = null
+}
 </script>
 
 <template>
@@ -98,6 +111,28 @@ const addressPreviews = (address) => ({
             <h1 class="text-h4">Users</h1>
 
             <div>{{ JSON.stringify(users) }}</div>
+
+            <h1 class="text-h4">Remove user</h1>
+
+            <v-select
+                v-model="userToRemove"
+                label="User to remove"
+                :items="users"
+                :item-props="userPreviews"
+            ></v-select>
+            <v-btn
+                min-width="164"
+                color="red"
+                @click="remove"
+            >
+                <v-icon
+                    icon="mdi-delete"
+                    size="large"
+                    start
+                />
+
+                Remove user
+            </v-btn>
         </v-responsive>
     </v-container>
 </template>

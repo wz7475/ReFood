@@ -1,14 +1,30 @@
 from fastapi import FastAPI, Body, HTTPException, Depends
-from .models import Users, Addresses, Offers, Dishes
+from fastapi.middleware.cors import CORSMiddleware
+from .models import Base, Users, Addresses, Dishes, Offers
 from sqlalchemy.sql.functions import current_timestamp
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from .cfg import SQLALCHEMY_DATABASE_URL
 
 # SQLAlchemy configuration
-
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+app = FastAPI()
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.on_event("startup")
+def startup_event():
+    # Create tables
+    Base.metadata.create_all(bind=engine)
 
 def get_db():
     db = SessionLocal()
@@ -16,8 +32,6 @@ def get_db():
         yield db
     finally:
         db.close()
-
-app = FastAPI()
 
 @app.get("/")
 async def read_root():

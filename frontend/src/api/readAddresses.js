@@ -6,5 +6,14 @@ export const readAddresses = async () => {
         headers: {
             'Content-Type': 'application/json',
         },
-    }).then((res) => res.json())
+    })
+        .then((res) => res.json())
+        .then((res) =>
+            res.map((address) => ({
+                streetName: address.street_name,
+                houseNr: address.house_nr,
+                apartamentNr: address.apartament_nr,
+                city: address.city,
+            }))
+        )
 }

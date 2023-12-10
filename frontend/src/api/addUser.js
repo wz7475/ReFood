@@ -4,7 +4,7 @@ export const addUser = async (
     name,
     surname,
     age,
-    adressId,
+    addressId,
     phoneNr,
     rating
 ) => {
@@ -18,7 +18,7 @@ export const addUser = async (
             name,
             surname,
             age,
-            address_id: adressId,
+            address_id: addressId,
             phone_nr: phoneNr,
             rating,
         }),

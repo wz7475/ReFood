@@ -1,24 +1,38 @@
 <script setup>
-import { ref } from 'vue'
-import { addUser } from '@/api'
-//add_user(name, surname, age, address_id, phone_nr, rating):
+import { ref, onMounted } from 'vue'
+import { addUser, readUsers, readAddresses } from '@/api'
+
 const name = ref('')
 const surname = ref('')
 const age = ref('')
-const addressId = ref(0)
+const address = ref(null)
 const phoneNr = ref('')
 const rating = ref('')
+
+const users = ref([])
+const addresses = ref([])
 
 const submit = async () => {
     await addUser(
         name.value,
         surname.value,
         parseInt(age.value),
-        addressId.value,
+        address.value.id,
         phoneNr.value,
         rating.value
     )
+
+    users.value = await readUsers()
 }
+
+onMounted(async () => {
+    addresses.value = await readAddresses()
+    users.value = await readUsers()
+})
+
+const addressPreviews = (address) => ({
+    title: `${address.city}, ${address.streetName}, ${address.houseNr}-${address.apartamentNr}`,
+})
 </script>
 
 <template>
@@ -38,6 +52,13 @@ const submit = async () => {
                 required
                 hide-details
             ></v-text-field>
+
+            <v-select
+                v-model="address"
+                label="Address"
+                :items="addresses"
+                :item-props="addressPreviews"
+            ></v-select>
 
             <v-text-field
                 v-model="age"
@@ -73,6 +94,10 @@ const submit = async () => {
 
                 Add user
             </v-btn>
+
+            <h1 class="text-h4">Users</h1>
+
+            <div>{{ JSON.stringify(users) }}</div>
         </v-responsive>
     </v-container>
 </template>

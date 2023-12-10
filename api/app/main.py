@@ -1,12 +1,12 @@
 from fastapi import FastAPI, Body, HTTPException
-from .models import Base, Users, Addresses, Offers, Dishes
+from .models import Users, Addresses, Offers, Dishes
 from sqlalchemy.sql.functions import current_timestamp
-from sqlalchemy.orm import sessionmaker, load_only
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
-
+from .cfg import SQLALCHEMY_DATABASE_URL
 
 # SQLAlchemy configuration
-SQLALCHEMY_DATABASE_URL = "postgresql://refood:refood@my_postgres/refood_db"
+
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

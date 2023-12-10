@@ -16,7 +16,7 @@ app = FastAPI()
 
 @app.get("/")
 async def read_root():
-    return {"Nie no": "we coś wybierz"}
+    return "ReFood"
 
 @app.get("/users")
 async def read_users():

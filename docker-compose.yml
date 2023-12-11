@@ -26,6 +26,12 @@ services:
       - postgres
     networks:
       - shared-network
+  
+  frontend:
+    build: ./frontend
+    command: nginx -g "daemon off;"
+    ports:
+      - "8090:80"
 
 volumes:
   postgres-data:

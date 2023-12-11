@@ -44,6 +44,20 @@ const routes = [
             },
         ],
     },
+    {
+        path: '/dish',
+        component: () => import('@/layouts/default/DefaultLayout.vue'),
+        children: [
+            {
+                path: '',
+                name: 'Dish',
+                component: () =>
+                    import(
+                        /* webpackChunkName: "home" */ '@/views/DishView.vue'
+                    ),
+            },
+        ],
+    },
 ]
 
 const router = createRouter({

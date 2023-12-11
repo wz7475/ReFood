@@ -20,6 +20,11 @@ const items = ref([
         to: '/dish',
         icon: 'mdi-food',
     },
+    {
+        title: 'Offer',
+        to: '/offer',
+        icon: 'mdi-offer',
+    },
 ])
 </script>
 

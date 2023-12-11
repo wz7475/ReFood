@@ -7,3 +7,11 @@ export * from './readUsers'
 export * from './addAddress'
 export * from './deleteAddress'
 export * from './readAddresses'
+
+export * from './addDish'
+export * from './deleteDish'
+export * from './readDishes'
+
+export * from './addOffer'
+export * from './deleteOffer'
+export * from './readOffers'

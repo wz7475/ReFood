@@ -44,6 +44,34 @@ const routes = [
             },
         ],
     },
+    {
+        path: '/dish',
+        component: () => import('@/layouts/default/DefaultLayout.vue'),
+        children: [
+            {
+                path: '',
+                name: 'Dish',
+                component: () =>
+                    import(
+                        /* webpackChunkName: "home" */ '@/views/DishView.vue'
+                    ),
+            },
+        ],
+    },
+    {
+        path: '/offer',
+        component: () => import('@/layouts/default/DefaultLayout.vue'),
+        children: [
+            {
+                path: '',
+                name: 'Offer',
+                component: () =>
+                    import(
+                        /* webpackChunkName: "home" */ '@/views/OfferView.vue'
+                    ),
+            },
+        ],
+    },
 ]
 
 const router = createRouter({

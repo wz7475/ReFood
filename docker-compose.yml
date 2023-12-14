@@ -19,9 +19,10 @@ services:
     build: ./api
     ports:
       - "8080:80"
-    command: uvicorn app.main:app --host 0.0.0.0 --port 80
+    command: bash -c "python seed_db.py && uvicorn app.main:app --host 0.0.0.0 --port 80"
     volumes:
       - ./api/app:/code/app
+      - ./api/seed_db.py:/code/seed_db.py
     depends_on:
       - postgres
     networks:

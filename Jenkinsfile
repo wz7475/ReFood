@@ -16,11 +16,23 @@ pipeline {
 	    stage('build image') {
             steps {
                     sh 'cd hello-world && docker build -t hello-world-fastapi .'
-                    sh 'echo "BUILD SUCCESSFUL"'
+                    sh 'echo "BUILD SUCCESSFUL FROM BRANCH EMPTY PROJECT"'
                     sh 'docker login maluch.mikr.us:40480 -u ${NEXUS_USER} -p ${NEXUS_PASSWORD}'
                     sh 'docker tag hello-world-fastapi maluch.mikr.us:40480/refood-docker/hello-world-fastapi:latest'
                     sh 'docker push maluch.mikr.us:40480/refood-docker/hello-world-fastapi:latest'
             }
 	    }
+        post {
+            success {
+                script {
+                    gitLabCommitStatus('success')
+                }
+            }
+            failure {
+                script {
+                    gitLabCommitStatus('failed')
+                }
+            }
+        }
     }
 }

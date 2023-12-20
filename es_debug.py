@@ -2,7 +2,9 @@ from time import sleep
 
 from elasticsearch import Elasticsearch
 import warnings
+
 warnings.filterwarnings("ignore")
+
 
 def create_index(es, index_name):
     if not es.indices.exists(index=index_name):
@@ -29,6 +31,7 @@ def get_by_seller_id(es, index_name, seller_id):
     }
     return es.search(index=index_name, body=query)
 
+
 def get_by_fulltext(es, index_name, fields, search_text):
     query = {
         "query": {
@@ -40,9 +43,20 @@ def get_by_fulltext(es, index_name, fields, search_text):
     }
     return es.search(index=index_name, body=query)
 
+
 def check_data(es, index_name):
     query = {"query": {"match_all": {}}}
     return es.search(index=index_name, body=query)
+
+
+def delete_document(es, index_name, doc_id):
+    try:
+        response = es.delete(index=index_name, id=doc_id)
+        return response
+    except Exception as e:
+        print(f"Error deleting document: {e}")
+        return None
+
 
 if __name__ == "__main__":
     es = Elasticsearch("http://localhost:9200")
@@ -76,10 +90,15 @@ if __name__ == "__main__":
     index_offer(es, index_name, offer1)
     index_offer(es, index_name, offer2)
     index_offer(es, index_name, offer3)
+    # delete_document(es, index_name, 3)
     es.indices.refresh(index=index_name)
     # sleep(1)
     # response = get_by_seller_id(es, index_name, 2)
-    response = get_by_fulltext(es, index_name, ["description"], "test1")
+    response = get_by_fulltext(es,
+                               index_name,
+                               ["description"],
+                               "test3",
+                               )
     # response = check_data(es, index_name)
     print(response)
     # for hit in response['hits']['hits']:

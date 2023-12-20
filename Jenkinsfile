@@ -22,16 +22,16 @@ pipeline {
                     sh 'docker push maluch.mikr.us:40480/refood-docker/hello-world-fastapi:latest'
             }
 	    }
-        post {
-            success {
-                script {
-                    gitLabCommitStatus('success')
-                }
+    }
+    post {
+        success {
+            script {
+                gitLabCommitStatus('success')
             }
-            failure {
-                script {
-                    gitLabCommitStatus('failed')
-                }
+        }
+        failure {
+            script {
+                gitLabCommitStatus('failed')
             }
         }
     }

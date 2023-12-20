@@ -58,13 +58,28 @@ services:
     healthcheck:
       test: "exit 0"
 
-  fulltext:
+  add-offers:
     build: ./fulltext
-    container_name: fulltext
+    container_name: add-offers
     volumes:
       - ./fulltext/app:/code
+      - ./config.py:/code/config.py
     working_dir: /code
-    command: python3 main.py
+    command: python3 add_offers.py
+    networks:
+        - shared-network
+    depends_on:
+        - elasticsearch
+        - rabbitmq
+
+  delete-offers:
+    build: ./fulltext
+    container_name: delete-offers
+    volumes:
+      - ./fulltext/app:/code
+      - ./config.py:/code/config.py
+    working_dir: /code
+    command: python3 delete_offers.py
     networks:
         - shared-network
     depends_on:

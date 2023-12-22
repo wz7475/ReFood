@@ -1,10 +1,16 @@
+import json
+
+import pika
 from fastapi import FastAPI, Body, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+
+from .logger import get_logger
 from .models import Base, Users, Dishes, Offers, DishTags, OfferState, TagsValues, Tags
 from sqlalchemy.sql.functions import current_timestamp
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from .cfg import SQLALCHEMY_DATABASE_URL
+from config import ADD_OFFER_QUEUE, DELETE_OFFER_QUEUE
 
 # SQLAlchemy configuration
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
@@ -33,7 +39,39 @@ def get_db():
 def startup_event():
     # Create tables
     Base.metadata.create_all(bind=engine)
+    global channel_add, channel_delete, logger
+    logger = get_logger()
+    conn_add = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq', heartbeat=0))
+    channel_add = conn_add.channel()
+    channel_add.queue_declare(queue=ADD_OFFER_QUEUE)
+    conn_delete = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq', heartbeat=0))
+    channel_delete = conn_delete.channel()
+    channel_delete.queue_declare(queue=DELETE_OFFER_QUEUE)
 
+@app.get("/test-es-add-offer/{offer_id}")
+async def test_es_add_offer(offer_id: int):
+    offer = {
+        "id": offer_id,
+        "dish_id": offer_id,
+        "seller_id": offer_id,
+        "address_id": offer_id,
+        "creation_date": "2021-01-01",
+        "description": f"test{offer_id} offer hdyż",
+    }
+    channel_add.basic_publish(exchange='',
+                            routing_key=ADD_OFFER_QUEUE,
+                            body=json.dumps(offer))
+    return offer
+
+@app.get("/test-es-delete-offer/{offer_id}")
+async def test_es_delete_offer(offer_id: int):
+    offer = {
+        "id": offer_id,
+    }
+    channel_delete.basic_publish(exchange='',
+                            routing_key=DELETE_OFFER_QUEUE,
+                            body=json.dumps(offer))
+    return offer
 
 @app.get("/")
 async def read_root(db: SessionLocal = Depends(get_db)):

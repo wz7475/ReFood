@@ -23,6 +23,7 @@ services:
     volumes:
       - ./api/app:/code/app
       - ./api/seed_db.py:/code/seed_db.py
+      - ./config.py:/code/config.py
     depends_on:
       - postgres
     networks:

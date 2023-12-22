@@ -46,6 +46,11 @@ services:
       - "9300:9300"
     networks:
       - shared-network
+    healthcheck:
+      test: curl -s http://elasticsearch01:9200 >/dev/null || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 50
 
   rabbitmq:
     container_name: rabbitmq
@@ -65,12 +70,13 @@ services:
       - ./fulltext/app:/code
       - ./config.py:/code/config.py
     working_dir: /code
-    command: python3 add_offers.py
+    command: python3 es_queue_runner.py --mode add
     networks:
         - shared-network
     depends_on:
         - elasticsearch
         - rabbitmq
+    restart: always
 
   delete-offers:
     build: ./fulltext
@@ -79,12 +85,28 @@ services:
       - ./fulltext/app:/code
       - ./config.py:/code/config.py
     working_dir: /code
-    command: python3 delete_offers.py
+    command: python3 es_queue_runner.py --mode add
     networks:
         - shared-network
     depends_on:
         - elasticsearch
         - rabbitmq
+    restart: always
+
+  update-offers:
+    build: ./fulltext
+    container_name: update-offers
+    volumes:
+      - ./fulltext/app:/code
+      - ./config.py:/code/config.py
+    working_dir: /code
+    command: python3 es_queue_runner.py --mode update
+    networks:
+        - shared-network
+    depends_on:
+        - elasticsearch
+        - rabbitmq
+    restart: always
 
 volumes:
   postgres-data:

@@ -2,7 +2,7 @@ import json
 import sys
 
 import pika
-from config_copy import DELETE_OFFER_QUEUE
+from config import DELETE_OFFER_QUEUE
 
 
 def generate_offer_to_rm(param: int):

@@ -1,13 +1,13 @@
+import sys
+
 from elasticsearch import Elasticsearch
 
 from es_tools import get_by_fulltext
-from config_copy import OFFER_INDEX
-
+from config import OFFER_INDEX
 
 if __name__ == '__main__':
-
     fields = ["description"]
-    query = "hdyż"
+    query = sys.argv[1]
 
     es = Elasticsearch("http://localhost:9200")
 

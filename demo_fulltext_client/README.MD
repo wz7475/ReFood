@@ -1,0 +1,5 @@
+- this is an example of how to use the fulltext client
+- it is not containreized but run locally
+- shows how to use the fulltext packages to index and search
+- config.py is copied from root of this repo 
+- the original config.py should be copied with docker volumes to root of each package related to es db

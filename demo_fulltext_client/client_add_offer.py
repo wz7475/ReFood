@@ -11,7 +11,7 @@ def generate_offer(param: int):
         "seller_id": param,
         "address_id": param,
         "creation_date": "2021-01-01",
-        "description": f"test{param} offer hdyż",
+        "description": f"test{param+1} offer hdyż",
     }
 
 if __name__ == '__main__':

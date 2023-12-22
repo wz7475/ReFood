@@ -72,11 +72,10 @@ services:
     working_dir: /code
     command: python3 es_queue_runner.py --mode add
     networks:
-        - shared-network
+      - shared-network
     depends_on:
-        - elasticsearch
-        - rabbitmq
-    restart: always
+      - elasticsearch
+      - rabbitmq
 
   delete-offers:
     build: ./fulltext
@@ -85,28 +84,14 @@ services:
       - ./fulltext/app:/code
       - ./config.py:/code/config.py
     working_dir: /code
-    command: python3 es_queue_runner.py --mode add
+    command: python3 es_queue_runner.py --mode delete
     networks:
-        - shared-network
+      - shared-network
     depends_on:
-        - elasticsearch
-        - rabbitmq
-    restart: always
+      - elasticsearch
+      - rabbitmq
 
-  update-offers:
-    build: ./fulltext
-    container_name: update-offers
-    volumes:
-      - ./fulltext/app:/code
-      - ./config.py:/code/config.py
-    working_dir: /code
-    command: python3 es_queue_runner.py --mode update
-    networks:
-        - shared-network
-    depends_on:
-        - elasticsearch
-        - rabbitmq
-    restart: always
+
 
 volumes:
   postgres-data:

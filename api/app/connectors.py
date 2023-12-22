@@ -5,11 +5,12 @@ import pika
 from pika.exceptions import AMQPConnectionError
 from elasticsearch import Elasticsearch
 from elasticsearch import ConnectionError
+from config import ELASTIC_URL, RABBITHOST
 
 def get_rabbitmq_connection(logger: logging.Logger):
     for i in range(10):
         try:
-            connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq', heartbeat=0))
+            connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITHOST, heartbeat=0))
             return connection
         except AMQPConnectionError:
             sleep(5)
@@ -19,7 +20,7 @@ def get_rabbitmq_connection(logger: logging.Logger):
 def get_es_connection(logger: logging.Logger):
     for i in range(10):
         try:
-            es = Elasticsearch("http://elasticsearch:9200")
+            es = Elasticsearch(ELASTIC_URL)
             return es
         except ConnectionError:
             sleep(5)

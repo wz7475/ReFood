@@ -7,7 +7,7 @@ import argparse
 from elasticsearch import Elasticsearch
 from logger import get_logger
 from es_tools import create_index, index_document, delete_indexed_document
-from config import OFFER_INDEX, ADD_OFFER_QUEUE, DELETE_OFFER_QUEUE
+from config import OFFER_INDEX, ADD_OFFER_QUEUE, DELETE_OFFER_QUEUE, ELASTIC_URL, RABBITHOST
 from elasticsearch import ConnectionError
 logger = get_logger()
 
@@ -48,7 +48,7 @@ def delete_callback(ch, method, properties, body):
 def get_es_connection(index_name, logger: logging.Logger):
     for i in range(10):
         try:
-            es = Elasticsearch("http://elasticsearch:9200")
+            es = Elasticsearch(ELASTIC_URL)
             create_index(es, index_name, logger)
         except ConnectionError:
             logger.warning("Elasticsearch connection error, retrying in 5 seconds.")
@@ -75,7 +75,7 @@ if __name__ == '__main__':
 
     # rabbitmq
     connection = pika.BlockingConnection(
-        pika.ConnectionParameters(host='rabbitmq', heartbeat=0)
+        pika.ConnectionParameters(host=RABBITHOST, heartbeat=0)
     )
     channel = connection.channel()
     channel.queue_declare(queue=queue)

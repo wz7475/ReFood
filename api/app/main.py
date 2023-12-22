@@ -9,8 +9,11 @@ from .models import Base, Users, Dishes, Offers, DishTags, OfferState, TagsValue
 from sqlalchemy.sql.functions import current_timestamp
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
+from elasticsearch import Elasticsearch
 from .cfg import SQLALCHEMY_DATABASE_URL
-from config import ADD_OFFER_QUEUE, DELETE_OFFER_QUEUE
+from config import ADD_OFFER_QUEUE, DELETE_OFFER_QUEUE, OFFER_INDEX
+from .es_tools import get_by_fulltext
+from .connectors import get_rabbitmq_connection, get_es_connection
 
 # SQLAlchemy configuration
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
@@ -39,14 +42,18 @@ def get_db():
 def startup_event():
     # Create tables
     Base.metadata.create_all(bind=engine)
-    global channel_add, channel_delete, logger
+    """
+    due to official guide connections to rabbitmq and elasticsearch should be long lived so they are global 
+    """
+    global channel_add, channel_delete, logger, es
     logger = get_logger()
-    conn_add = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq', heartbeat=0))
+    conn_add = get_rabbitmq_connection(logger)
     channel_add = conn_add.channel()
     channel_add.queue_declare(queue=ADD_OFFER_QUEUE)
-    conn_delete = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq', heartbeat=0))
+    conn_delete = get_rabbitmq_connection(logger)
     channel_delete = conn_delete.channel()
     channel_delete.queue_declare(queue=DELETE_OFFER_QUEUE)
+    es = get_es_connection(logger)
 
 @app.get("/test-es-add-offer/{offer_id}")
 async def test_es_add_offer(offer_id: int):
@@ -72,6 +79,12 @@ async def test_es_delete_offer(offer_id: int):
                             routing_key=DELETE_OFFER_QUEUE,
                             body=json.dumps(offer))
     return offer
+
+@app.get("/test-es-query/{pattern}")
+async def test_es_query(pattern: str):
+    fields = ["description"]
+    result = get_by_fulltext(es, OFFER_INDEX, fields, pattern)
+    return result
 
 @app.get("/")
 async def read_root(db: SessionLocal = Depends(get_db)):

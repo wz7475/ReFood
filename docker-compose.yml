@@ -26,6 +26,10 @@ services:
       - ./config.py:/code/config.py
     depends_on:
       - postgres
+      - rabbitmq
+      - elasticsearch
+      - add-offers
+      - delete-offers
     networks:
       - shared-network
   

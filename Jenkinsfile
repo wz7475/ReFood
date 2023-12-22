@@ -26,12 +26,12 @@ pipeline {
     post {
         success {
             script {
-                gitLabCommitStatus('success')
+                gitlabCommitStatus('success')
             }
         }
         failure {
             script {
-                gitLabCommitStatus('failed')
+                gitlabCommitStatus('failed')
             }
         }
     }

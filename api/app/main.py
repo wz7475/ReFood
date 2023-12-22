@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Body, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from .models import Base, Users, Addresses, Dishes, Offers
+from .models import Base, Users, Dishes, Offers, DishTags, OfferState, TagsValues, Tags
 from sqlalchemy.sql.functions import current_timestamp
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
@@ -22,12 +22,6 @@ app.add_middleware(
 )
 
 
-@app.on_event("startup")
-def startup_event():
-    # Create tables
-    Base.metadata.create_all(bind=engine)
-
-
 def get_db():
     db = SessionLocal()
     try:
@@ -35,9 +29,19 @@ def get_db():
     finally:
         db.close()
 
+@app.on_event("startup")
+def startup_event():
+    # Create tables
+    Base.metadata.create_all(bind=engine)
+
 
 @app.get("/")
-async def read_root():
+async def read_root(db: SessionLocal = Depends(get_db)):
+    if len(db.query(Tags).all()) == 0:
+        for idx, tag_value in enumerate([TagsValues.VEGETARIAN, TagsValues.SHOULD_BE_EATEN_WARM, TagsValues.GLUTEN_FREE, TagsValues.SUGAR_FREE]):
+            tag = Tags(id=idx, tag=tag_value)
+            db.add(tag)
+        db.commit()
     return "ReFood"
 
 
@@ -51,25 +55,21 @@ async def read_users(db: SessionLocal = Depends(get_db)):
 async def add_user(
     name: str = Body(),
     surname: str = Body(),
-    age: int = Body(),
-    address_id: int = Body(),
+    login: str = Body(),
     phone_nr: str = Body(),
-    rating: int = Body(),
-    db: SessionLocal = Depends(get_db),
+    db: SessionLocal = Depends(get_db)
 ):
     user_id = max([row[0] for row in db.query(Users.id).all()] + [-1]) + 1
     user = Users(
         id=user_id,
         name=name,
         surname=surname,
-        age=age,
-        address_id=address_id,
-        phone_nr=phone_nr,
-        rating=rating,
+        login=login,
+        phone_nr=phone_nr
     )
     db.add(user)
     db.commit()
-
+    return user_id
 
 @app.get("/users/{user_id}")
 async def read_user_by_id(user_id: int, db: SessionLocal = Depends(get_db)):
@@ -86,47 +86,6 @@ async def delete_user(user_id: int, db: SessionLocal = Depends(get_db)):
     db.commit()
 
 
-@app.get("/addresses")
-async def read_addresses(db: SessionLocal = Depends(get_db)):
-    addresses = db.query(Addresses).all()
-    return addresses
-
-
-@app.post("/addresses")
-async def add_address(
-    street_name: str = Body(),
-    house_nr: int = Body(),
-    apartament_nr: int = Body(),
-    city: str = Body(),
-    db: SessionLocal = Depends(get_db),
-):
-    address_id = max([row[0] for row in db.query(Addresses.id).all()] + [-1]) + 1
-    address = Addresses(
-        id=address_id,
-        street_name=street_name,
-        house_nr=house_nr,
-        apartament_nr=apartament_nr,
-        city=city,
-    )
-    db.add(address)
-    db.commit()
-
-
-@app.get("/addresses/{address_id}")
-async def read_address_by_id(address_id: int, db: SessionLocal = Depends(get_db)):
-    address = db.query(Addresses).filter(Addresses.id == address_id).first()
-    return address
-
-
-@app.delete("/addresses/{address_id}")
-async def delete_address(address_id: int, db: SessionLocal = Depends(get_db)):
-    address = db.query(Addresses).filter(Addresses.id == address_id).first()
-    if not address:
-        raise HTTPException(status_code=404, detail="Address not found")
-    db.delete(address)
-    db.commit()
-
-
 @app.get("/offers")
 async def read_offers(db: SessionLocal = Depends(get_db)):
     offers = db.query(Offers).all()
@@ -135,21 +94,25 @@ async def read_offers(db: SessionLocal = Depends(get_db)):
 
 @app.post("/offers")
 async def add_offer(
+    latitude: float = Body(),
+    longitude: float = Body(),
     dish_id: int = Body(),
     seller_id: int = Body(),
-    address_id: int = Body(),
-    db: SessionLocal = Depends(get_db),
+    db: SessionLocal = Depends(get_db)
 ):
     offer_id = max([row[0] for row in db.query(Offers.id).all()] + [-1]) + 1
     offer = Offers(
         id=offer_id,
         dish_id=dish_id,
+        latitude=latitude,
+        longitude = longitude,
+        state=OfferState.OPEN,
         seller_id=seller_id,
-        address_id=address_id,
-        creation_date=current_timestamp(),
+        creation_date=current_timestamp()
     )
     db.add(offer)
     db.commit()
+    return offer_id
 
 
 @app.get("/offers/{offer_id}")
@@ -176,23 +139,22 @@ async def read_dishes(db: SessionLocal = Depends(get_db)):
 @app.post("/dishes")
 async def add_dish(
     name: str = Body(),
-    is_vegetarian: bool = Body(),
     description: str = Body(),
     price: int = Body(),
     how_many_days_before_expiration: float = Body(),
-    db: SessionLocal = Depends(get_db),
+    db: SessionLocal = Depends(get_db)
 ):
     dish_id = max([row[0] for row in db.query(Dishes.id).all()] + [-1]) + 1
     dish = Dishes(
         id=dish_id,
         name=name,
-        is_vegetarian=is_vegetarian,
         price=price,
         description=description,
-        how_many_days_before_expiration=how_many_days_before_expiration,
+        how_many_days_before_expiration=how_many_days_before_expiration
     )
     db.add(dish)
     db.commit()
+    return dish_id
 
 
 @app.get("/dishes/{dish_id}")
@@ -208,3 +170,74 @@ async def delete_dish(dish_id: int, db: SessionLocal = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Dish not found")
     db.delete(dish)
     db.commit()
+
+
+
+@app.get("/dishtags")
+async def read_dishtags(db: SessionLocal = Depends(get_db)):
+    dishtags = db.query(DishTags).all()
+    return dishtags
+
+
+@app.post("/dishtags")
+async def add_dishtag(
+    dish_id: int = Body(),
+    tag_id: int = Body(),
+    db: SessionLocal = Depends(get_db)
+):
+    dishtag_id = max([row[0] for row in db.query(DishTags.id).all()] + [-1]) + 1
+    dishtag = Dishes(
+        id=dishtag_id,
+        dish_id=dish_id,
+        tag_id=tag_id
+    )
+    db.add(dishtag)
+    db.commit()
+    return dishtag_id
+
+
+@app.get("/dishtags/{dishtag_id}")
+async def read_dishtag_by_id(dishtag_id: int, db: SessionLocal = Depends(get_db)):
+    dishtag = db.query(DishTags).filter(DishTags.id == dishtag_id).first()
+    return dishtag
+
+
+@app.delete("/dishtags/{dishtags_id}")
+async def delete_dishtag(dishtag_id: int, db: SessionLocal = Depends(get_db)):
+    dishtag = db.query(DishTags).filter(DishTags.id == dishtag_id).first()
+    if not dishtag:
+        raise HTTPException(status_code=404, detail="DishTag not found")
+    db.delete(dishtag)
+    db.commit()
+
+@app.get("/get_tags_map")
+async def get_tags_map():
+    return {
+        0: "Vegetarian",
+        1: "Gluten free",
+        2: "Sugar free",
+        3: "Should be eaten warm"
+        }
+
+@app.post("/add_tags_to_dish")
+async def add_tags_to_dish(dish_id: int, list_of_tag_id: list[int]):
+    for tag_id in list_of_tag_id:
+        add_dishtag(dish_id, tag_id)
+
+
+@app.post("/add_full_offer")
+async def add_offer_full(
+    latitude: float = Body(),
+    longitude: float = Body(),
+    seller_id: int = Body(), # get user id from session
+    name: str = Body(),
+    description: str = Body(),
+    price: int = Body(),
+    how_many_days_before_expiration: float = Body(),
+    list_of_tag_id: list[int] = Body(),
+    db: SessionLocal = Depends(get_db)
+):
+    dish_id = add_dish(name, description, price, how_many_days_before_expiration)
+    add_tags_to_dish(dish_id, list_of_tag_id)
+    offer_id = add_offer(latitude, longitude, dish_id, seller_id)
+    return offer_id

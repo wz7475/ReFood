@@ -92,7 +92,12 @@ const chipConfig = {
 
             <v-card-actions>
                 <v-spacer />
-                <v-btn color="secondary">Details</v-btn>
+                <v-btn
+                    color="secondary"
+                    :to="{ name: 'offerDetails', params: { id: result.id } }"
+                >
+                    Details
+                </v-btn>
             </v-card-actions>
         </v-card>
     </v-responsive>

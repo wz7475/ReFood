@@ -37,6 +37,16 @@ const items = computed(() =>
                   to: '/search',
                   icon: 'mdi-magnify',
               },
+              {
+                  title: 'Add offer',
+                  to: '/addOffer',
+                  icon: 'mdi-plus-box',
+              },
+              {
+                  title: 'My offers',
+                  to: '/myOffers',
+                  icon: 'mdi-food',
+              },
 
               {
                   title: 'Log out',

@@ -67,6 +67,33 @@ const routes = [
                     ),
                 meta: { requiresAuth: true },
             },
+            {
+                path: '/offer/:id',
+                name: 'offerDetails',
+                component: () =>
+                    import(
+                        /* webpackChunkName: "home" */ '@/views/OfferDetailsView.vue'
+                    ),
+                meta: { requiresAuth: true },
+            },
+            {
+                path: '/addOffer',
+                name: 'addOffer',
+                component: () =>
+                    import(
+                        /* webpackChunkName: "home" */ '@/views/AddOfferView.vue'
+                    ),
+                meta: { requiresAuth: true },
+            },
+            {
+                path: '/myOffers',
+                name: 'myOffers',
+                component: () =>
+                    import(
+                        /* webpackChunkName: "home" */ '@/views/MyOffersView.vue'
+                    ),
+                meta: { requiresAuth: true },
+            },
         ],
     },
 ]

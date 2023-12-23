@@ -273,10 +273,11 @@ async def delete_dishtag(dishtag_id: int, db: SessionLocal = Depends(get_db)):
 @app.get("/get_tags_map")
 async def get_tags_map():
     return {
-        0: "Vegetarian",
-        1: "Gluten free",
-        2: "Sugar free",
-        3: "Should be eaten warm"
+        0: "vege",
+        1: "glutenFree",
+        2: "sugarFree",
+        3: "shouldBeWarm",
+        4: "spicy"
         }
 
 @app.post("/add_tags_to_dish")

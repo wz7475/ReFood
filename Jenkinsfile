@@ -7,12 +7,18 @@ pipeline {
     }
 
     stages {
+        stage('jenkins ssh') {
+          steps {
+            sh 'ssh rszczep2@172.19.0.1 "docker run --rm alpine"'
+          }
+        }
+
         stage('run tests') {
             agent {
-                docker { image 'python:3.10' }
+              docker { image 'python:3.10' }
             }
             steps {
-                sh 'cd hello-world && pip install -r requirements.txt && pytest test_main.py'
+              sh 'cd hello-world && pip install -r requirements.txt && pytest test_main.py'
             }
         }
 
@@ -21,11 +27,11 @@ pipeline {
             branch 'main'
           }
             steps {
-                sh 'cd hello-world && docker build -t hello-world-fastapi .'
-                sh 'echo "BUILD SUCCESSFUL FROM BRANCH EMPTY PROJECT"'
-                sh 'docker login maluch.mikr.us:40480 -u ${NEXUS_USER} -p ${NEXUS_PASSWORD}'
-                sh 'docker tag hello-world-fastapi maluch.mikr.us:40480/refood-docker/hello-world-fastapi:latest'
-                sh 'docker push maluch.mikr.us:40480/refood-docker/hello-world-fastapi:latest'
+              sh 'cd hello-world && docker build -t hello-world-fastapi .'
+              sh 'echo "BUILD SUCCESSFUL FROM BRANCH EMPTY PROJECT"'
+              sh 'docker login maluch.mikr.us:40480 -u ${NEXUS_USER} -p ${NEXUS_PASSWORD}'
+              sh 'docker tag hello-world-fastapi maluch.mikr.us:40480/refood-docker/hello-world-fastapi:latest'
+              sh 'docker push maluch.mikr.us:40480/refood-docker/hello-world-fastapi:latest'
             }
         }
     }

@@ -1,17 +1,44 @@
+import json
+from contextlib import asynccontextmanager
+
+import pika
 from fastapi import FastAPI, Body, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+
+from .logger import get_logger
 from .models import Base, Users, Dishes, Offers, DishTags, OfferState, TagsValues, Tags
 from sqlalchemy.sql.functions import current_timestamp
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
+from elasticsearch import Elasticsearch
 from .cfg import SQLALCHEMY_DATABASE_URL
+from config import ADD_OFFER_QUEUE, DELETE_OFFER_QUEUE, OFFER_INDEX
+from .es_tools import get_by_fulltext
+from .connectors import get_rabbitmq_connection, get_es_connection
 
 # SQLAlchemy configuration
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-app = FastAPI()
+connections = {}
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger = get_logger()
+    connections["logger"] = logger
+    connections["add-offer"] = get_rabbitmq_connection(logger)
+    connections["add-channel"] = connections["add-offer"].channel()
+    connections["add-channel"].queue_declare(queue=ADD_OFFER_QUEUE)
+    connections["delete-offer"] = get_rabbitmq_connection(logger)
+    connections["delete-channel"] = connections["delete-offer"].channel()
+    connections["delete-channel"].queue_declare(queue=DELETE_OFFER_QUEUE)
+    connections["es"] = get_es_connection(logger)
+    yield
+    connections.clear()
+
+app = FastAPI(lifespan=lifespan)
+
 origins = ["*"]
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -29,11 +56,44 @@ def get_db():
     finally:
         db.close()
 
+
+
 @app.on_event("startup")
 def startup_event():
     # Create tables
     Base.metadata.create_all(bind=engine)
 
+
+@app.get("/test-es-add-offer/{offer_id}")
+async def test_es_add_offer(offer_id: int):
+    offer = {
+        "id": offer_id,
+        "dish_id": offer_id,
+        "seller_id": offer_id,
+        "address_id": offer_id,
+        "creation_date": "2021-01-01",
+        "description": f"test{offer_id} offer hdyż",
+    }
+    connections["add-channel"].basic_publish(exchange='',
+                            routing_key=ADD_OFFER_QUEUE,
+                            body=json.dumps(offer))
+    return offer
+
+@app.get("/test-es-delete-offer/{offer_id}")
+async def test_es_delete_offer(offer_id: int):
+    offer = {
+        "id": offer_id,
+    }
+    connections["delete-channel"].basic_publish(exchange='',
+                            routing_key=DELETE_OFFER_QUEUE,
+                            body=json.dumps(offer))
+    return offer
+
+@app.get("/test-es-query/{pattern}")
+async def test_es_query(pattern: str):
+    fields = ["description"]
+    result = get_by_fulltext(connections["es"], OFFER_INDEX, fields, pattern)
+    return result
 
 @app.get("/")
 async def read_root(db: SessionLocal = Depends(get_db)):

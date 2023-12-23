@@ -1,8 +1,11 @@
 import enum
+
+import bcrypt
 from sqlalchemy import Column, Integer, String, Enum, Sequence, DateTime, ForeignKey, Float
 from sqlalchemy.orm import relationship, declarative_base
 
 Base = declarative_base()
+
 
 class Users(Base):
     __tablename__ = "Users"
@@ -11,9 +14,20 @@ class Users(Base):
     name = Column(String)
     surname = Column(String)
     login = Column(String)
+    hashed_password = Column(String)
     phone_nr = Column(String(9))
 
     offers = relationship("Offers", back_populates="seller")
+
+    # offers = relationship("Offers", back_populates="buyer")
+    def set_password(self, password: str):
+        # Hash the password and store the hashed value
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+        self.hashed_password = hashed_password.decode('utf-8')
+
+    def verify_password(self, password: str) -> bool:
+        # Verify the entered password against the stored hashed password
+        return bcrypt.checkpw(password.encode('utf-8'), self.hashed_password.encode('utf-8'))
 
 
 class Dishes(Base):
@@ -28,10 +42,12 @@ class Dishes(Base):
     dishtags = relationship("DishTags", back_populates="dishes")
     offers = relationship("Offers", back_populates="dishes")
 
+
 class OfferState(enum.Enum):
     OPEN = 0
     RESERVED = 1
     COMPLETED = 2
+
 
 class Offers(Base):
     __tablename__ = "Offers"
@@ -42,10 +58,14 @@ class Offers(Base):
     state = Column(Enum(OfferState))
     dish_id = Column(Integer, ForeignKey("Dishes.id"))
     seller_id = Column(Integer, ForeignKey("Users.id"))
+    # buyer_id = Column(Integer, ForeignKey("Users.id"))
     creation_date = Column(DateTime)
+    price = Column(Float)
 
     seller = relationship("Users", back_populates="offers")
+    # buyer = relationship("Users", back_populates="offers")
     dishes = relationship("Dishes", back_populates="offers")
+
 
 class TagsValues(enum.Enum):
     VEGETARIAN = 0
@@ -54,6 +74,7 @@ class TagsValues(enum.Enum):
     SHOULD_BE_EATEN_WARM = 3
     SPICY = 4
 
+
 class Tags(Base):
     __tablename__ = "Tags"
 
@@ -61,6 +82,7 @@ class Tags(Base):
     tag = Column(Enum(TagsValues))
 
     dishtags = relationship("DishTags", back_populates="tags")
+
 
 class DishTags(Base):
     __tablename__ = "DishTags"

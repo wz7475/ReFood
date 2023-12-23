@@ -2,7 +2,7 @@ import json
 from contextlib import asynccontextmanager
 
 import pika
-from fastapi import FastAPI, Body, HTTPException, Depends
+from fastapi import FastAPI, Body, HTTPException, Depends, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from .logger import get_logger
@@ -14,6 +14,8 @@ from elasticsearch import Elasticsearch
 from .cfg import SQLALCHEMY_DATABASE_URL, ADD_OFFER_QUEUE, DELETE_OFFER_QUEUE, OFFER_INDEX
 from .es_tools import get_by_fulltext
 from .connectors import get_rabbitmq_connection, get_es_connection
+from .sessions import SessionData, backend, cookie, verifier
+from uuid import UUID, uuid4
 
 # SQLAlchemy configuration
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
@@ -103,10 +105,31 @@ async def read_root():
     return "ReFood"
 
 
-@app.get("/users")
-async def read_users(db: SessionLocal = Depends(get_db)):
-    users = db.query(Users).all()
-    return users
+# Sesions
+@app.post("/login")
+async def create_session(response: Response, login: str = Body(), password: str = Body(), db: SessionLocal = Depends(get_db)):
+    if db.query(Users).filter_by(login=login).first() is not None and (not db.query(Users).filter_by(login=login).first().verify_password(password)):
+        raise HTTPException(status_code=401, detail="Incorrect password or login")
+    session = uuid4()
+    data = SessionData(username=login)
+
+    await backend.create(session, data)
+    cookie.attach_to_response(response, session)
+
+    return f"created session for {login}"
+
+
+@app.get("/whoami", dependencies=[Depends(cookie)])
+async def whoami(session_data: SessionData = Depends(verifier)):
+    return session_data
+
+
+@app.post("/delete_session")
+async def del_session(response: Response, session_id: UUID = Depends(cookie)):
+    await backend.delete(session_id)
+    cookie.delete_from_response(response)
+    return "deleted session"
+
 
 
 @app.post("/users")
@@ -114,6 +137,7 @@ async def add_user(
     name: str = Body(),
     surname: str = Body(),
     login: str = Body(),
+    password: str = Body(),
     phone_nr: str = Body(),
     db: SessionLocal = Depends(get_db)
 ):
@@ -125,19 +149,15 @@ async def add_user(
         login=login,
         phone_nr=phone_nr
     )
+    user.set_password(password)
     db.add(user)
     db.commit()
     return user_id
 
-@app.get("/users/{user_id}")
-async def read_user_by_id(user_id: int, db: SessionLocal = Depends(get_db)):
-    user = db.query(Users).filter(Users.id == user_id).first()
-    return user
 
-
-@app.delete("/users/{user_id}")
-async def delete_user(user_id: int, db: SessionLocal = Depends(get_db)):
-    user = db.query(Users).filter(Users.id == user_id).first()
+@app.delete("/users")
+async def delete_user(session_data: SessionData = Depends(verifier), db: SessionLocal = Depends(get_db)):
+    user = db.query(Users).filter(Users.login == session_data.username).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     db.delete(user)

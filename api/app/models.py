@@ -52,6 +52,7 @@ class TagsValues(enum.Enum):
     GLUTEN_FREE = 1
     SUGAR_FREE = 2
     SHOULD_BE_EATEN_WARM = 3
+    SPICY = 4
 
 class Tags(Base):
     __tablename__ = "Tags"

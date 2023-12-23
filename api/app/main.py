@@ -276,7 +276,8 @@ async def get_tags_map():
         0: "Vegetarian",
         1: "Gluten free",
         2: "Sugar free",
-        3: "Should be eaten warm"
+        3: "Should be eaten warm",
+        4: "Spicy"
         }
 
 @app.post("/add_tags_to_dish")

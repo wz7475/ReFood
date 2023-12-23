@@ -33,6 +33,12 @@ const items = computed(() =>
                   icon: 'mdi-home',
               },
               {
+                  title: 'Search offers',
+                  to: '/search',
+                  icon: 'mdi-magnify',
+              },
+
+              {
                   title: 'Log out',
                   action: appStore.logout,
                   to: '/home',

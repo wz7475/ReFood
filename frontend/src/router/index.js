@@ -1,5 +1,6 @@
 // Composables
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAppStore } from '@/store/app'
 
 const routes = [
     {
@@ -9,6 +10,7 @@ const routes = [
             {
                 path: '/',
                 redirect: { name: 'home' },
+                meta: { requiresAuth: false },
             },
             {
                 path: '/home',
@@ -17,6 +19,7 @@ const routes = [
                     import(
                         /* webpackChunkName: "home" */ '@/views/HomeView.vue'
                     ),
+                meta: { requiresAuth: false },
             },
             {
                 path: '/login',
@@ -25,6 +28,7 @@ const routes = [
                     import(
                         /* webpackChunkName: "home" */ '@/views/LoginView.vue'
                     ),
+                meta: { requiresAuth: false },
             },
             {
                 path: '/register',
@@ -33,6 +37,7 @@ const routes = [
                     import(
                         /* webpackChunkName: "home" */ '@/views/LoginView.vue'
                     ),
+                meta: { requiresAuth: false },
             },
 
             {
@@ -40,8 +45,27 @@ const routes = [
                 name: 'dashboard',
                 component: () =>
                     import(
-                        /* webpackChunkName: "home" */ '@/views/HomeView.vue'
+                        /* webpackChunkName: "home" */ '@/views/DashboardView.vue'
                     ),
+                meta: { requiresAuth: true },
+            },
+            {
+                path: '/search',
+                name: 'search',
+                component: () =>
+                    import(
+                        /* webpackChunkName: "home" */ '@/views/SearchView.vue'
+                    ),
+                meta: { requiresAuth: true },
+            },
+            {
+                path: '/offers/:query',
+                name: 'offers',
+                component: () =>
+                    import(
+                        /* webpackChunkName: "home" */ '@/views/OffersView.vue'
+                    ),
+                meta: { requiresAuth: true },
             },
         ],
     },
@@ -50,6 +74,16 @@ const routes = [
 const router = createRouter({
     history: createWebHistory(process.env.BASE_URL),
     routes,
+})
+
+router.beforeEach((to) => {
+    const appStore = useAppStore()
+
+    if (to.meta.requiresAuth && !appStore.signedIn) {
+        return {
+            name: 'login',
+        }
+    }
 })
 
 export default router

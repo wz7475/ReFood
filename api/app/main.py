@@ -23,6 +23,8 @@ connections = {}
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger = get_logger()
+    Base.metadata.create_all(bind=engine)
+    init_tag_table(SessionLocal())
     connections["logger"] = logger
     connections["add-offer"] = get_rabbitmq_connection(logger)
     connections["add-channel"] = connections["add-offer"].channel()
@@ -56,13 +58,6 @@ def get_db():
         db.close()
 
 
-
-@app.on_event("startup")
-def startup_event():
-    # Create tables
-    Base.metadata.create_all(bind=engine)
-
-
 @app.get("/test-es-add-offer/{offer_id}")
 async def test_es_add_offer(offer_id: int):
     offer = {
@@ -94,13 +89,17 @@ async def test_es_query(pattern: str):
     result = get_by_fulltext(connections["es"], OFFER_INDEX, fields, pattern)
     return result
 
-@app.get("/")
-async def read_root(db: SessionLocal = Depends(get_db)):
+
+def init_tag_table(db: SessionLocal):
     if len(db.query(Tags).all()) == 0:
-        for idx, tag_value in enumerate([TagsValues.VEGETARIAN, TagsValues.SHOULD_BE_EATEN_WARM, TagsValues.GLUTEN_FREE, TagsValues.SUGAR_FREE]):
+        for idx, tag_value in enumerate([TagsValues.VEGETARIAN, TagsValues.GLUTEN_FREE, TagsValues.SUGAR_FREE, TagsValues.SHOULD_BE_EATEN_WARM, TagsValues.SPICY]):
             tag = Tags(id=idx, tag=tag_value)
             db.add(tag)
         db.commit()
+
+
+@app.get("/")
+async def read_root():
     return "ReFood"
 
 

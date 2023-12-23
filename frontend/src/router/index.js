@@ -7,67 +7,40 @@ const routes = [
         component: () => import('@/layouts/default/DefaultLayout.vue'),
         children: [
             {
-                path: '',
-                name: 'Home',
+                path: '/',
+                redirect: { name: 'home' },
+            },
+            {
+                path: '/home',
+                name: 'home',
                 component: () =>
                     import(
                         /* webpackChunkName: "home" */ '@/views/HomeView.vue'
                     ),
             },
-        ],
-    },
-    {
-        path: '/user',
-        component: () => import('@/layouts/default/DefaultLayout.vue'),
-        children: [
             {
-                path: '',
-                name: 'User',
+                path: '/login',
+                name: 'login',
                 component: () =>
                     import(
-                        /* webpackChunkName: "home" */ '@/views/UserView.vue'
+                        /* webpackChunkName: "home" */ '@/views/LoginView.vue'
                     ),
             },
-        ],
-    },
-    {
-        path: '/address',
-        component: () => import('@/layouts/default/DefaultLayout.vue'),
-        children: [
             {
-                path: '',
-                name: 'Address',
+                path: '/register',
+                name: 'register',
                 component: () =>
                     import(
-                        /* webpackChunkName: "home" */ '@/views/AddressView.vue'
+                        /* webpackChunkName: "home" */ '@/views/LoginView.vue'
                     ),
             },
-        ],
-    },
-    {
-        path: '/dish',
-        component: () => import('@/layouts/default/DefaultLayout.vue'),
-        children: [
+
             {
-                path: '',
-                name: 'Dish',
+                path: '/dashboard',
+                name: 'dashboard',
                 component: () =>
                     import(
-                        /* webpackChunkName: "home" */ '@/views/DishView.vue'
-                    ),
-            },
-        ],
-    },
-    {
-        path: '/offer',
-        component: () => import('@/layouts/default/DefaultLayout.vue'),
-        children: [
-            {
-                path: '',
-                name: 'Offer',
-                component: () =>
-                    import(
-                        /* webpackChunkName: "home" */ '@/views/OfferView.vue'
+                        /* webpackChunkName: "home" */ '@/views/HomeView.vue'
                     ),
             },
         ],

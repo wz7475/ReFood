@@ -31,7 +31,7 @@ pipeline {
 
         stage('deploy application') {
           steps {
-            sh 'ssh rszczep2@172.19.0.1 "docker pull maluch.mikr.us:40480/refood-docker/hello-world-fastapi:latest && docker build hello-world-fastapi && docker up hello-world-fastapi"'
+            sh 'ssh rszczep2@172.19.0.1 "docker login maluch.mikr.us:40480 -u ${NEXUS_USER} -p ${NEXUS_PASSWORD} && docker pull maluch.mikr.us:40480/refood-docker/hello-world-fastapi:latest && docker run hello-world-fastapi"'
           }
         }
     }

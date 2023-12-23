@@ -7,12 +7,6 @@ pipeline {
     }
 
     stages {
-        stage('jenkins ssh') {
-          steps {
-            sh 'ssh rszczep2@172.19.0.1 "docker run --rm alpine"'
-          }
-        }
-
         stage('run tests') {
             agent {
               docker { image 'python:3.10' }
@@ -23,7 +17,7 @@ pipeline {
         }
 
         stage('build image') {
-          when{
+          when {
             branch 'main'
           }
             steps {
@@ -33,6 +27,15 @@ pipeline {
               sh 'docker tag hello-world-fastapi maluch.mikr.us:40480/refood-docker/hello-world-fastapi:latest'
               sh 'docker push maluch.mikr.us:40480/refood-docker/hello-world-fastapi:latest'
             }
+        }
+
+        stage('deploy application') {
+          when {
+            branch 'main'
+          }
+          steps {
+            sh 'ssh rszczep2@172.19.0.1 "docker pull maluch.mikr.us:40480/refood-docker/hello-world-fastapi:latest && docker build hello-world-fastapi && docker up hello-world-fastapi"'
+          }
         }
     }
 

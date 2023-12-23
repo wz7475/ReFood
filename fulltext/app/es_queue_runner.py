@@ -7,8 +7,10 @@ import argparse
 from elasticsearch import Elasticsearch
 from logger import get_logger
 from es_tools import create_index, index_document, delete_indexed_document
-from config import OFFER_INDEX, ADD_OFFER_QUEUE, DELETE_OFFER_QUEUE, ELASTIC_URL, RABBITHOST
+from config import OFFER_INDEX, ADD_OFFER_QUEUE, DELETE_OFFER_QUEUE, ELASTIC_URL, RABBITHOST, RECONNECT_INTERVAL_IN_S, \
+    AVAIBLE_RECONNECTS
 from elasticsearch import ConnectionError
+
 logger = get_logger()
 
 
@@ -46,16 +48,17 @@ def delete_callback(ch, method, properties, body):
 
 
 def get_es_connection(index_name, logger: logging.Logger):
-    for i in range(10):
+    for i in range(AVAIBLE_RECONNECTS):
         try:
             es = Elasticsearch(ELASTIC_URL)
             create_index(es, index_name, logger)
         except ConnectionError:
-            logger.warning("Elasticsearch connection error, retrying in 5 seconds.")
-            sleep(5)
+            logger.warning(f"Elasticsearch connection error, retrying in {RECONNECT_INTERVAL_IN_S} seconds.")
+            sleep(RECONNECT_INTERVAL_IN_S)
             continue
         return es
     raise ConnectionError("Elasticsearch connection error.")
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

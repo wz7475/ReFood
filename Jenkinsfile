@@ -16,32 +16,32 @@ pipeline {
             }
         }
 
-        stage('build image') {
+        stage('build images and send to nexus') {
             steps {
               sh 'cd api && docker build -t api .'
               sh 'echo "api BUILD SUCCESSFUL"'
-              sh 'cd ../frontend && docker build -t frontend .'
+              sh 'cd frontend && docker build -t frontend .'
               sh 'echo "frontend BUILD SUCCESSFUL"'
-              sh 'cd ../fulltext && docker build -t fulltext .'
+              sh 'cd fulltext && docker build -t fulltext .'
               sh 'echo "fulltext BUILD SUCCESSFUL"'
               sh 'echo "SENDING IMAGES TO NEXUS"'
               sh 'docker login maluch.mikr.us:40480 -u ${NEXUS_USER} -p ${NEXUS_PASSWORD}'
               sh 'echo "LOGIN SUCCESSFUL"'
               sh 'docker tag api maluch.mikr.us:40480/refood-docker/api:latest'
               sh 'docker push maluch.mikr.us:40480/refood-docker/api:latest'
-              sh 'echo "PUSHED api IMAGE'
+              sh 'echo "PUSHED api IMAGE"'
               sh 'docker tag frontend maluch.mikr.us:40480/refood-docker/frontend:latest'
               sh 'docker push maluch.mikr.us:40480/refood-docker/frontend:latest'
-              sh 'echo "PUSHED frontend IMAGE'
+              sh 'echo "PUSHED frontend IMAGE"'
               sh 'docker tag fulltext maluch.mikr.us:40480/refood-docker/fulltext:latest'
               sh 'docker push maluch.mikr.us:40480/refood-docker/fulltext:latest'
-              sh 'echo "PUSHED fulltext IMAGE'
+              sh 'echo "PUSHED fulltext IMAGE"'
             }
         }
 
         stage('deploy application') {
           steps {
-            sh 'ssh rszczep2@172.19.0.1 "docker login maluch.mikr.us:40480 -u ${NEXUS_USER} -p ${NEXUS_PASSWORD} && docker pull maluch.mikr.us:40480/refood-docker/api:latest && docker pull maluch.mikr.us:40480/refood-docker/frontend:latest && docker pull maluch.mikr.us:40480/refood-docker/fulltext:latest && docker-compose build --no-cache && docker-compose up -d"'
+            sh 'ssh rszczep2@172.19.0.1 "docker login maluch.mikr.us:40480 -u ${NEXUS_USER} -p ${NEXUS_PASSWORD} && docker-compose down && docker pull maluch.mikr.us:40480/refood-docker/api:latest && docker pull maluch.mikr.us:40480/refood-docker/frontend:latest && docker pull maluch.mikr.us:40480/refood-docker/fulltext:latest && docker-compose build --no-cache && docker-compose up -d"'
           }
         }
     }

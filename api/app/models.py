@@ -18,6 +18,7 @@ class Users(Base):
     phone_nr = Column(String(9))
 
     offers = relationship("Offers", back_populates="seller")
+    dishes = relationship("Dishes", back_populates="author")
 
     # offers = relationship("Offers", back_populates="buyer")
     def set_password(self, password: str):
@@ -38,7 +39,9 @@ class Dishes(Base):
     description = Column(String)
     price = Column(Integer)
     how_many_days_before_expiration = Column(Float)
+    author_id = Column(Integer, ForeignKey("Users.id"))
 
+    author = relationship("Users", back_populates="dishes")
     dishtags = relationship("DishTags", back_populates="dishes")
     offers = relationship("Offers", back_populates="dishes")
 

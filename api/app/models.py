@@ -38,7 +38,7 @@ class Dishes(Base):
     name = Column(String)
     description = Column(String)
     price = Column(Integer)
-    how_many_days_before_expiration = Column(Float)
+    how_many_days_before_expiration = Column(Float) # TODO w sumie nie ma sensu, powinna być data i liczone na runtime bo tak to kto zmieniejsza to
     author_id = Column(Integer, ForeignKey("Users.id"))
 
     author = relationship("Users", back_populates="dishes")
@@ -61,13 +61,16 @@ class Offers(Base):
     state = Column(Enum(OfferState))
     dish_id = Column(Integer, ForeignKey("Dishes.id"))
     seller_id = Column(Integer, ForeignKey("Users.id"))
-    # buyer_id = Column(Integer, ForeignKey("Users.id"))
+    buyer_id = Column(Integer, ForeignKey("Users.id"))
     creation_date = Column(DateTime)
     price = Column(Float)
 
     seller = relationship("Users", back_populates="offers")
-    # buyer = relationship("Users", back_populates="offers")
+    buyer = relationship("Users", back_populates="offers")
     dishes = relationship("Dishes", back_populates="offers")
+
+    def print_offer(self):
+        pass
 
 
 class TagsValues(enum.Enum):

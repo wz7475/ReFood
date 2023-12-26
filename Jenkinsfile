@@ -47,6 +47,36 @@ pipeline {
       }
     }
 
+    stage('build images') {
+      when {
+        expression { 
+          return env.BRANCH_NAME != 'main'
+        }
+      }
+      steps {
+        script {
+          try {
+            updateGitlabCommitStatus name: 'Build docker images', state: 'running'
+            sh 'cd api && docker build -t api .'
+            sh 'echo "api BUILD SUCCESSFUL"'
+            sh 'cd frontend && docker build -t frontend .'
+            sh 'echo "frontend BUILD SUCCESSFUL"'
+            sh 'cd fulltext && docker build -t fulltext .'
+            sh 'echo "fulltext BUILD SUCCESSFUL"'
+            updateGitlabCommitStatus name: 'Build docker images', state: 'success'
+          } catch (Exception e) {
+            if (e instanceof InterruptedException) {
+              updateGitlabCommitStatus name: 'Build docker images', state: 'canceled'  
+            }
+            else {
+              updateGitlabCommitStatus name: 'Build docker images', state: 'failed'
+            }
+            throw e
+          }
+        }
+      }
+    }
+
     stage('build images and send to nexus') {
       when {
         branch 'main'

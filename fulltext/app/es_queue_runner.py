@@ -7,7 +7,7 @@ import argparse
 from elasticsearch import Elasticsearch
 from logger import get_logger
 from es_tools import create_index, index_document, delete_indexed_document
-from config import OFFER_INDEX, ADD_OFFER_QUEUE, DELETE_OFFER_QUEUE, ELASTIC_URL, RABBITHOST, RECONNECT_INTERVAL_IN_S, \
+from cfg import OFFER_INDEX, ADD_OFFER_QUEUE, DELETE_OFFER_QUEUE, ELASTIC_URL, RABBITHOST, RECONNECT_INTERVAL_IN_S, \
     AVAIBLE_RECONNECTS
 from elasticsearch import ConnectionError
 

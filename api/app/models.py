@@ -125,7 +125,7 @@ def read_all_offers(db, offer_id=-1):
     """
     query_result = db.execute(
         select(Offers.latitude, Offers.longitude, Offers.price, Dishes.name, Dishes.description,
-               Dishes.how_many_days_before_expiration, Users.name, Users.surname, Offers.id, Offers.state, Dishes.tags)
+               Dishes.how_many_days_before_expiration, Users.name, Users.surname, Offers.id, Offers.state, Dishes.tags, Offers.buyer_id)
         .join_from(Offers, Dishes, Offers.dish_id == Dishes.id)
         .join_from(Offers, Users, Offers.seller_id == Users.id).where(Offers.state == OfferState.OPEN)
     ).all()
@@ -148,7 +148,22 @@ def convert_offers(query_result, offer_id=-1):
                 "seller_surname": row[7],
                 "offer_id": row[8],
                 "offer_state": row[9],
-                "tags": row[10]
+                "tags": row[10],
+                "buyer_id": row[11]
             }
             offers.append(offer)
     return offers
+
+
+def get_user_name(user_id, db):
+    user = db.query(Users).filter_by(id=user_id).first()
+    if user:
+        return user.name
+    return ""
+
+
+def get_user_surname(user_id, db):
+    user = db.query(Users).filter_by(id=user_id).first()
+    if user:
+        return user.surname
+    return ""

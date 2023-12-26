@@ -6,7 +6,7 @@ from fastapi import FastAPI, Body, HTTPException, Depends, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from .logger import get_logger
-from .models import Base, Users, Dishes, Offers, DishTags, OfferState, TagsValues, Tags, read_all_offers, convert_offers
+from .models import Base, Users, Dishes, Offers, DishTags, OfferState, TagsValues, Tags, read_all_offers, convert_offers, get_user_name, get_user_surname
 from sqlalchemy.sql.functions import current_timestamp
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine, select
@@ -196,11 +196,12 @@ async def read_offers(pattern: str, db: SessionLocal = Depends(get_db), session_
 
 @app.get("/my_offers", dependencies=[Depends(cookie)])
 async def read_offers(db: SessionLocal = Depends(get_db), session_data: SessionData = Depends(verifier)):
+    #TODO add buyer name and surname to samo w offer by id
     user_id = db.query(Users).filter_by(login=session_data.username).first().id
     sell_query_result = db.execute(
         select(Offers.latitude, Offers.longitude, Offers.price, Dishes.name, Dishes.description,
                Dishes.how_many_days_before_expiration, Users.name, Users.surname, Offers.id, Offers.state, Dishes.tags,
-               Offers.seller_id)
+               Offers.buyer_id)
         .join_from(Offers, Dishes, Offers.dish_id == Dishes.id)
         .join_from(Offers, Users, Offers.seller_id == Users.id)
         .filter_by(id=user_id)
@@ -217,10 +218,16 @@ async def read_offers(db: SessionLocal = Depends(get_db), session_data: SessionD
     buy_offers = convert_offers(buy_query_result)
     offers = []
     for offer in sell_offers:
+        buyer_id = offer["buyer_id"]
+        offer["buyer_name"] = get_user_name(buyer_id, db)
+        offer["buyer_surname"] = get_user_surname(buyer_id, db)
         offer["selling"] = True
         offer["buying"] = False
         offers.append(offer)
     for offer in buy_offers:
+        buyer_id = offer["buyer_id"]
+        offer["buyer_name"] = get_user_name(buyer_id, db)
+        offer["buyer_surname"] = get_user_surname(buyer_id, db)
         offer["selling"] = False
         offer["buying"] = True
         offers.append(offer)
@@ -308,10 +315,22 @@ async def add_offer(
 @app.get("/offers/{offer_id}", dependencies=[Depends(cookie)])
 async def read_offer_by_id(offer_id: int, db: SessionLocal = Depends(get_db),
                            session_data: SessionData = Depends(verifier)):
-    offer = read_all_offers(db, offer_id)
-    if len(offer) == 0:
+    query_result = db.execute(
+        select(Offers.latitude, Offers.longitude, Offers.price, Dishes.name, Dishes.description,
+               Dishes.how_many_days_before_expiration, Users.name, Users.surname, Offers.id, Offers.state, Dishes.tags,
+               Offers.buyer_id)
+        .join_from(Offers, Dishes, Offers.dish_id == Dishes.id)
+        .join_from(Offers, Users, Offers.seller_id == Users.id)).all()
+    offers = convert_offers(query_result, offer_id)
+    rdy_offers = []
+    for offer in offers:
+        buyer_id = offer["buyer_id"]
+        offer["buyer_name"] = get_user_name(buyer_id, db)
+        offer["buyer_surname"] = get_user_surname(buyer_id, db)
+        rdy_offers.append(offer)
+    if len(offers) == 0:
         raise HTTPException(status_code=404, detail="Offer not found")
-    return offer
+    return rdy_offers
 
 
 @app.delete("/offers/{offer_id}", dependencies=[Depends(cookie)])

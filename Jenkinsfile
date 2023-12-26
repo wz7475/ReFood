@@ -31,6 +31,7 @@ pipeline {
       steps {
         script {
           try {
+            updateGitlabCommitStatus name: 'Run tests', state: 'running'
             sh 'cd hello-world && pip install -r requirements.txt && pytest test_main.py'
             updateGitlabCommitStatus name: 'Run tests', state: 'success'
           } catch (Exception e) {
@@ -53,6 +54,7 @@ pipeline {
       steps {
         script {
           try {
+            updateGitlabCommitStatus name: 'Build and push docker images to Nexus', state: 'running'
             sh 'cd api && docker build -t api .'
             sh 'echo "api BUILD SUCCESSFUL"'
             sh 'cd frontend && docker build -t frontend .'
@@ -91,6 +93,7 @@ pipeline {
       steps {
         script {
           try {
+            updateGitlabCommitStatus name: 'Deploy application', state: 'running'
             sh 'ssh rszczep2@172.19.0.1 "docker login maluch.mikr.us:40480 -u ${NEXUS_USER} -p ${NEXUS_PASSWORD} && docker-compose down && docker pull maluch.mikr.us:40480/refood-docker/api:latest && docker pull maluch.mikr.us:40480/refood-docker/frontend:latest && docker pull maluch.mikr.us:40480/refood-docker/fulltext:latest && docker-compose build --no-cache && docker-compose up -d"'
             updateGitlabCommitStatus name: 'Deploy application', state: 'success'
           }

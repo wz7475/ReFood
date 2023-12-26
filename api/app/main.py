@@ -181,6 +181,7 @@ async def read_offers(db: SessionLocal = Depends(get_db), session_data: SessionD
     offers = read_all_offers(db)
     return offers
 
+
 @app.get("/offers_filter/{pattern}", dependencies=[Depends(cookie)])
 async def read_offers(pattern: str, db: SessionLocal = Depends(get_db), session_data: SessionData = Depends(verifier)):
     fields = ["description", "dish_name"]
@@ -195,18 +196,35 @@ async def read_offers(pattern: str, db: SessionLocal = Depends(get_db), session_
 
 
 @app.get("/my_offers", dependencies=[Depends(cookie)])
-# TODO offers with BOTH seller and buyer
 async def read_offers(db: SessionLocal = Depends(get_db), session_data: SessionData = Depends(verifier)):
     user_id = db.query(Users).filter_by(login=session_data.username).first().id
-    query_result = db.execute(
+    sell_query_result = db.execute(
         select(Offers.latitude, Offers.longitude, Offers.price, Dishes.name, Dishes.description,
-               Dishes.how_many_days_before_expiration, Users.name, Users.surname, Offers.id, Offers.state,
+               Dishes.how_many_days_before_expiration, Users.name, Users.surname, Offers.id, Offers.state, Dishes.tags,
                Offers.seller_id)
         .join_from(Offers, Dishes, Offers.dish_id == Dishes.id)
         .join_from(Offers, Users, Offers.seller_id == Users.id)
         .filter_by(id=user_id)
     )
-    offers = convert_offers(query_result)
+    sell_offers = convert_offers(sell_query_result)
+    buy_query_result = db.execute(
+        select(Offers.latitude, Offers.longitude, Offers.price, Dishes.name, Dishes.description,
+               Dishes.how_many_days_before_expiration, Users.name, Users.surname, Offers.id, Offers.state, Dishes.tags,
+               Offers.buyer_id)
+        .join_from(Offers, Dishes, Offers.dish_id == Dishes.id)
+        .join_from(Offers, Users, Offers.buyer_id == Users.id)
+        .filter_by(id=user_id)
+    )
+    buy_offers = convert_offers(buy_query_result)
+    offers = []
+    for offer in sell_offers:
+        offer["selling"] = True
+        offer["buying"] = False
+        offers.append(offer)
+    for offer in buy_offers:
+        offer["selling"] = False
+        offer["buying"] = True
+        offers.append(offer)
     return offers
 
 
@@ -218,6 +236,7 @@ async def add_offer(
         description: str = Body(),
         price: int = Body(),  # price in grosze
         how_many_days_before_expiration: float = Body(),
+        tags: list[int] = Body(),
         db: SessionLocal = Depends(get_db),
         session_data: SessionData = Depends(verifier)
 ):
@@ -225,12 +244,18 @@ async def add_offer(
     user = db.query(Users).filter_by(login=session_data.username).first()
 
     dish_id = max([row[0] for row in db.query(Dishes.id).all()] + [-1]) + 1
+
+    enum_tags = []
+    for tag_val in tags:
+        enum_tags.append(TagsValues(tag_val))
+
     dish = Dishes(
         id=dish_id,
         name=dish_name,
         description=description,
         how_many_days_before_expiration=how_many_days_before_expiration,
-        author_id=user.id
+        author_id=user.id,
+        tags=enum_tags
     )
     db.add(dish)
 
@@ -318,7 +343,6 @@ async def read_dishes_by_id(dish_id: int, db: SessionLocal = Depends(get_db),
     if not dish:
         raise HTTPException(status_code=404, detail="Dish not found")
     return dish
-    # dish = db.query(Dishes).filter(Dishes.id == dish_id).first()
 
 
 @app.delete("/dishes/{dish_id}")
@@ -360,10 +384,13 @@ async def complete_offer(
 ):
     user_id = db.query(Users).filter_by(login=session_data.username).first().id
     offer = db.query(Offers).filter_by(id=offer_id).first()
-    # offer.buyer_id = user_id # TODO eew dodać tego buyera żeby to w ogóle działało
+    if offer is None:
+        HTTPException(status_code=404, detail="Offer not found")
+    offer.buyer_id = user_id
     offer.state = OfferState.COMPLETED
     db.commit()
     return "ok"
+
 
 @app.post("/reserve_offer", dependencies=[Depends(cookie)])
 async def reserve_offer(
@@ -371,50 +398,50 @@ async def reserve_offer(
         db: SessionLocal = Depends(get_db),
         session_data: SessionData = Depends(verifier)
 ):
-    user_id = db.query(Users).filter_by(login=session_data.username).first().id
     offer = db.query(Offers).filter_by(id=offer_id).first()
-    # offer.buyer_id = user_id # TODO eew dodać tego buyera żeby to w ogóle działało
+    if offer is None:
+        HTTPException(status_code=404, detail="Offer not found")
     offer.state = OfferState.RESERVED
     db.commit()
     return "ok"
 
 
-@app.get("/dishtags")
-async def read_dishtags(db: SessionLocal = Depends(get_db)):
-    dishtags = db.query(DishTags).all()
-    return dishtags
-
-
-@app.post("/dishtags")
-async def add_dishtag(
-        dish_id: int = Body(),
-        tag_id: int = Body(),
-        db: SessionLocal = Depends(get_db)
-):
-    dishtag_id = max([row[0] for row in db.query(DishTags.id).all()] + [-1]) + 1
-    dishtag = Dishes(
-        id=dishtag_id,
-        dish_id=dish_id,
-        tag_id=tag_id
-    )
-    db.add(dishtag)
-    db.commit()
-    return dishtag_id
-
-
-@app.get("/dishtags/{dishtag_id}")
-async def read_dishtag_by_id(dishtag_id: int, db: SessionLocal = Depends(get_db)):
-    dishtag = db.query(DishTags).filter(DishTags.id == dishtag_id).first()
-    return dishtag
-
-
-@app.delete("/dishtags/{dishtags_id}")
-async def delete_dishtag(dishtag_id: int, db: SessionLocal = Depends(get_db)):
-    dishtag = db.query(DishTags).filter(DishTags.id == dishtag_id).first()
-    if not dishtag:
-        raise HTTPException(status_code=404, detail="DishTag not found")
-    db.delete(dishtag)
-    db.commit()
+# @app.get("/dishtags")
+# async def read_dishtags(db: SessionLocal = Depends(get_db)):
+#     dishtags = db.query(DishTags).all()
+#     return dishtags
+#
+#
+# @app.post("/dishtags")
+# async def add_dishtag(
+#         dish_id: int = Body(),
+#         tag_id: int = Body(),
+#         db: SessionLocal = Depends(get_db)
+# ):
+#     dishtag_id = max([row[0] for row in db.query(DishTags.id).all()] + [-1]) + 1
+#     dishtag = Dishes(
+#         id=dishtag_id,
+#         dish_id=dish_id,
+#         tag_id=tag_id
+#     )
+#     db.add(dishtag)
+#     db.commit()
+#     return dishtag_id
+#
+#
+# @app.get("/dishtags/{dishtag_id}")
+# async def read_dishtag_by_id(dishtag_id: int, db: SessionLocal = Depends(get_db)):
+#     dishtag = db.query(DishTags).filter(DishTags.id == dishtag_id).first()
+#     return dishtag
+#
+#
+# @app.delete("/dishtags/{dishtags_id}")
+# async def delete_dishtag(dishtag_id: int, db: SessionLocal = Depends(get_db)):
+#     dishtag = db.query(DishTags).filter(DishTags.id == dishtag_id).first()
+#     if not dishtag:
+#         raise HTTPException(status_code=404, detail="DishTag not found")
+#     db.delete(dishtag)
+#     db.commit()
 
 
 @app.get("/get_tags_map")
@@ -428,16 +455,10 @@ async def get_tags_map():
     }
 
 
-@app.post("/add_tags_to_dish")
-async def add_tags_to_dish(dish_id: int, list_of_tag_id: list[int]):
-    for tag_id in list_of_tag_id:
-        add_dishtag(dish_id, tag_id)
-
-
-
-
-
-
+# @app.post("/add_tags_to_dish")
+# async def add_tags_to_dish(dish_id: int, list_of_tag_id: list[int]):
+#     for tag_id in list_of_tag_id:
+#         add_dishtag(dish_id, tag_id)
 
 
 # utils
@@ -452,5 +473,3 @@ def add_offer_es(offer_id, latitude, longitude, dish_name, description, seller_n
                                              routing_key=ADD_OFFER_QUEUE,
                                              body=json.dumps(offer))
     return offer
-
-

@@ -5,7 +5,7 @@ import pika
 from pika.exceptions import AMQPConnectionError
 from elasticsearch import Elasticsearch
 from elasticsearch import ConnectionError
-from config import ELASTIC_URL, RABBITHOST, RECONNECT_INTERVAL_IN_S, AVAIBLE_RECONNECTS
+from cfg import ELASTIC_URL, RABBITHOST, RECONNECT_INTERVAL_IN_S, AVAIBLE_RECONNECTS
 
 def get_rabbitmq_connection(logger: logging.Logger):
     for i in range(AVAIBLE_RECONNECTS):

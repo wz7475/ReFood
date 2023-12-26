@@ -13,6 +13,8 @@ class SessionData(BaseModel):
 
 cookie_params = CookieParameters()
 cookie_params.max_age = 30*60  # 30 minutes max session in seconds
+cookie_params.secure = True
+cookie_params.samesite = None
 
 # Uses UUID
 cookie = SessionCookie(

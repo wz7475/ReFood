@@ -3,6 +3,8 @@ import enum
 import bcrypt
 from sqlalchemy import Column, Integer, String, Enum, Sequence, DateTime, ForeignKey, Float, select
 from sqlalchemy.orm import relationship, declarative_base
+from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.ext.mutable import MutableList
 from .logger import get_logger
 
 Base = declarative_base()
@@ -18,10 +20,14 @@ class Users(Base):
     hashed_password = Column(String)
     phone_nr = Column(String(9))
 
-    offers = relationship("Offers", back_populates="seller")
     dishes = relationship("Dishes", back_populates="author")
 
-    # offers = relationship("Offers", back_populates="buyer")
+    offersSell = relationship("Offers", back_populates="seller", foreign_keys="[Offers.seller_id]",
+                              primaryjoin="Users.id == Offers.seller_id")
+
+    offersBuy = relationship("Offers", back_populates="buyer", foreign_keys="[Offers.buyer_id]",
+                             primaryjoin="Users.id == Offers.buyer_id")
+
     def set_password(self, password: str):
         # Hash the password and store the hashed value
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
@@ -32,14 +38,24 @@ class Users(Base):
         return bcrypt.checkpw(password.encode('utf-8'), self.hashed_password.encode('utf-8'))
 
 
+class TagsValues(enum.Enum):
+    VEGETARIAN = 0
+    GLUTEN_FREE = 1
+    SUGAR_FREE = 2
+    SHOULD_BE_EATEN_WARM = 3
+    SPICY = 4
+
+
 class Dishes(Base):
     __tablename__ = "Dishes"
 
     id = Column(Integer, Sequence("dishes_id_seq"), primary_key=True, index=True, autoincrement=True)
     name = Column(String)
     description = Column(String)
-    how_many_days_before_expiration = Column(Float)  # TODO w sumie nie ma sensu, powinna być data i liczone na runtime bo tak to kto zmieniejsza to
+    how_many_days_before_expiration = Column(
+        Float)  # TODO w sumie nie ma sensu, powinna być data i liczone na runtime bo tak to kto zmieniejsza to, niby można od czasu wstawienia, ale nie no sus, nie podoba mi się
     author_id = Column(Integer, ForeignKey("Users.id"))
+    tags = Column(MutableList.as_mutable(ARRAY(Enum(TagsValues))), nullable=True)
 
     author = relationship("Users", back_populates="dishes")
     dishtags = relationship("DishTags", back_populates="dishes")
@@ -61,24 +77,20 @@ class Offers(Base):
     state = Column(Enum(OfferState))
     dish_id = Column(Integer, ForeignKey("Dishes.id"))
     seller_id = Column(Integer, ForeignKey("Users.id"))
-    # buyer_id = Column(Integer, ForeignKey("Users.id"))
+    buyer_id = Column(Integer, ForeignKey("Users.id"), nullable=True)
     creation_date = Column(DateTime)
     price = Column(Integer)
 
-    seller = relationship("Users", back_populates="offers")
-    # buyer = relationship("Users", back_populates="offers")
+    seller = relationship("Users", back_populates="offersSell",
+                          foreign_keys="[Offers.seller_id]", primaryjoin="Users.id == Offers.seller_id")
+
+    buyer = relationship("Users", back_populates="offersBuy",
+                         foreign_keys="[Offers.buyer_id]", primaryjoin="Users.id == Offers.buyer_id")
+
     dishes = relationship("Dishes", back_populates="offers")
 
-    def print_offer(self):
-        pass
 
 
-class TagsValues(enum.Enum):
-    VEGETARIAN = 0
-    GLUTEN_FREE = 1
-    SUGAR_FREE = 2
-    SHOULD_BE_EATEN_WARM = 3
-    SPICY = 4
 
 
 class Tags(Base):
@@ -104,8 +116,16 @@ class DishTags(Base):
 # utils
 
 def read_all_offers(db, offer_id=-1):
+    """
+    reads current open offers
+
+    :param db:
+    :param offer_id:
+    :return:
+    """
     query_result = db.execute(
-        select(Offers.latitude, Offers.longitude, Offers.price, Dishes.name, Dishes.description, Dishes.how_many_days_before_expiration, Users.name, Users.surname, Offers.id, Offers.state)
+        select(Offers.latitude, Offers.longitude, Offers.price, Dishes.name, Dishes.description,
+               Dishes.how_many_days_before_expiration, Users.name, Users.surname, Offers.id, Offers.state, Dishes.tags)
         .join_from(Offers, Dishes, Offers.dish_id == Dishes.id)
         .join_from(Offers, Users, Offers.seller_id == Users.id).where(Offers.state == OfferState.OPEN)
     ).all()
@@ -127,7 +147,8 @@ def convert_offers(query_result, offer_id=-1):
                 "seller_name": row[6],
                 "seller_surname": row[7],
                 "offer_id": row[8],
-                "offer_state": row[9]
+                "offer_state": row[9],
+                "tags": row[10]
             }
             offers.append(offer)
     return offers

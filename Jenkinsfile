@@ -4,6 +4,23 @@ pipeline {
     environment {
         NEXUS_USER = credentials('nexus-user')
         NEXUS_PASSWORD = credentials('nexus-password')
+        GITLAB_API_TOKEN = credentials('6dbbe98b-efbc-4c79-afc2-eafd13becba3')
+    }
+
+    post {
+      failure {
+        updateGitlabCommitStatus name: 'Jenkins pipeline', state: 'failed'
+      }
+      success {
+        updateGitlabCommitStatus name: 'Jenkins pipeline', state: 'success'
+      }
+      aborted {
+        updateGitlabCommitStatus name: 'Jenkins pipeline', state: 'canceled'
+      }
+    }
+
+    options {
+      gitLabConnection('Refood')
     }
 
     stages {
@@ -13,6 +30,7 @@ pipeline {
             }
             steps {
               sh 'cd hello-world && pip install -r requirements.txt && pytest test_main.py'
+              updateGitlabCommitStatus name: 'Run tests', state: 'success'
             }
         }
 
@@ -39,6 +57,7 @@ pipeline {
               sh 'docker tag fulltext maluch.mikr.us:40480/refood-docker/fulltext:latest'
               sh 'docker push maluch.mikr.us:40480/refood-docker/fulltext:latest'
               sh 'echo "PUSHED fulltext IMAGE"'
+              updateGitlabCommitStatus name: 'Build and push docker images to Nexus', state: 'success'
             }
         }
 
@@ -48,19 +67,8 @@ pipeline {
           }
           steps {
             sh 'ssh rszczep2@172.19.0.1 "docker login maluch.mikr.us:40480 -u ${NEXUS_USER} -p ${NEXUS_PASSWORD} && docker-compose down && docker pull maluch.mikr.us:40480/refood-docker/api:latest && docker pull maluch.mikr.us:40480/refood-docker/frontend:latest && docker pull maluch.mikr.us:40480/refood-docker/fulltext:latest && docker-compose build --no-cache && docker-compose up -d"'
+            updateGitlabCommitStatus name: 'Deploy application', state: 'success'
           }
-        }
-    }
-
-    post {
-      failure {
-        updateGitlabCommitStatus name: 'build', state: 'failed'
-      }
-      success {
-        updateGitlabCommitStatus name: 'build', state: 'success'
-      }
-      aborted {
-        updateGitlabCommitStatus name: 'build', state: 'canceled'
       }
     }
 }

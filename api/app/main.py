@@ -11,8 +11,7 @@ from sqlalchemy.sql.functions import current_timestamp
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from elasticsearch import Elasticsearch
-from .cfg import SQLALCHEMY_DATABASE_URL
-from config import ADD_OFFER_QUEUE, DELETE_OFFER_QUEUE, OFFER_INDEX
+from .cfg import SQLALCHEMY_DATABASE_URL, ADD_OFFER_QUEUE, DELETE_OFFER_QUEUE, OFFER_INDEX
 from .es_tools import get_by_fulltext
 from .connectors import get_rabbitmq_connection, get_es_connection
 

@@ -24,7 +24,7 @@ pipeline {
   }
 
   stages {
-    stage('run tests') {
+    stage('Run tests') {
       agent {
         docker { image 'python:3.10' }
       }
@@ -47,10 +47,10 @@ pipeline {
       }
     }
 
-    stage('build images') {
+    stage('Build images') {
       when {
         expression { 
-          return env.BRANCH_NAME == 'main'
+          return env.BRANCH_NAME != 'main'
         }
       }
       steps {
@@ -77,9 +77,37 @@ pipeline {
       }
     }
 
-    stage('build images and send to nexus') {
+    stage('Test connection to nexus') {
       when {
-        branch 'main'
+        expression { 
+          return env.BRANCH_NAME == 'main'
+        }
+      }
+      steps {
+        script {
+          try {
+            updateGitlabCommitStatus name: 'Test connection to nexus', state: 'running'
+            sh 'docker login maluch.mikr.us:40480 -u ${NEXUS_USER} -p ${NEXUS_PASSWORD}'
+            sh 'echo "LOGIN SUCCESSFUL"'
+            updateGitlabCommitStatus name: 'Test connection to nexus', state: 'success'
+          } catch (Exception e) {
+            if (e instanceof InterruptedException) {
+              updateGitlabCommitStatus name: 'Test connection to nexus', state: 'canceled'  
+            }
+            else {
+              updateGitlabCommitStatus name: 'Test connection to nexus', state: 'failed'
+            }
+            throw e
+          }
+        }
+      }
+    }
+
+    stage('Build images and send to nexus') {
+      when {
+        expression { 
+          return env.BRANCH_NAME == 'main'
+        }
       }
       steps {
         script {
@@ -116,9 +144,12 @@ pipeline {
         }
       }
     }
+
     stage('Deploy application') {
       when {
-        branch 'main'
+        expression { 
+          return env.BRANCH_NAME == 'main'
+        }
       }
       steps {
         script {

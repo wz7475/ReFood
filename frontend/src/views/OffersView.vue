@@ -95,6 +95,7 @@ const chipConfig = {
                 <v-btn
                     color="secondary"
                     :to="{ name: 'offerDetails', params: { id: result.id } }"
+                    append-icon="mdi-chevron-right"
                 >
                     Details
                 </v-btn>

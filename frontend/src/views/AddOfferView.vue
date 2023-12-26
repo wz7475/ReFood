@@ -72,8 +72,6 @@ const submit = () => {}
                     visible
                     draggable
                     v-model:lat-lng="position"
-                    @dragstart="dragging = true"
-                    @dragend="dragging = false"
                 ></l-marker>
             </l-map>
         </div>

@@ -5,15 +5,15 @@ import pika
 from fastapi import FastAPI, Body, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
-from logger import get_logger
-from models import Base, Users, Dishes, Offers, DishTags, OfferState, TagsValues, Tags
+from .logger import get_logger
+from .models import Base, Users, Dishes, Offers, DishTags, OfferState, TagsValues, Tags
 from sqlalchemy.sql.functions import current_timestamp
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from elasticsearch import Elasticsearch
-from cfg import SQLALCHEMY_DATABASE_URL, ADD_OFFER_QUEUE, DELETE_OFFER_QUEUE, OFFER_INDEX
-from es_tools import get_by_fulltext
-from connectors import get_rabbitmq_connection, get_es_connection
+from .cfg import SQLALCHEMY_DATABASE_URL, ADD_OFFER_QUEUE, DELETE_OFFER_QUEUE, OFFER_INDEX
+from .es_tools import get_by_fulltext
+from .connectors import get_rabbitmq_connection, get_es_connection
 
 # SQLAlchemy configuration
 engine = create_engine(SQLALCHEMY_DATABASE_URL)

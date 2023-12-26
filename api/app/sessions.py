@@ -19,7 +19,7 @@ cookie = SessionCookie(
     cookie_name="sessionId",
     identifier="general_verifier",
     auto_error=True,
-    secret_key="DONOTUSE",
+    secret_key="sekretnyklucz",
     cookie_params=cookie_params,
 )
 backend = InMemoryBackend[UUID, SessionData]()

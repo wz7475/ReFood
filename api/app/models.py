@@ -1,8 +1,9 @@
 import enum
 
 import bcrypt
-from sqlalchemy import Column, Integer, String, Enum, Sequence, DateTime, ForeignKey, Float
+from sqlalchemy import Column, Integer, String, Enum, Sequence, DateTime, ForeignKey, Float, select
 from sqlalchemy.orm import relationship, declarative_base
+from .logger import get_logger
 
 Base = declarative_base()
 
@@ -37,8 +38,7 @@ class Dishes(Base):
     id = Column(Integer, Sequence("dishes_id_seq"), primary_key=True, index=True, autoincrement=True)
     name = Column(String)
     description = Column(String)
-    price = Column(Integer)
-    how_many_days_before_expiration = Column(Float) # TODO w sumie nie ma sensu, powinna być data i liczone na runtime bo tak to kto zmieniejsza to
+    how_many_days_before_expiration = Column(Float)  # TODO w sumie nie ma sensu, powinna być data i liczone na runtime bo tak to kto zmieniejsza to
     author_id = Column(Integer, ForeignKey("Users.id"))
 
     author = relationship("Users", back_populates="dishes")
@@ -61,12 +61,12 @@ class Offers(Base):
     state = Column(Enum(OfferState))
     dish_id = Column(Integer, ForeignKey("Dishes.id"))
     seller_id = Column(Integer, ForeignKey("Users.id"))
-    buyer_id = Column(Integer, ForeignKey("Users.id"))
+    # buyer_id = Column(Integer, ForeignKey("Users.id"))
     creation_date = Column(DateTime)
-    price = Column(Float)
+    price = Column(Integer)
 
     seller = relationship("Users", back_populates="offers")
-    buyer = relationship("Users", back_populates="offers")
+    # buyer = relationship("Users", back_populates="offers")
     dishes = relationship("Dishes", back_populates="offers")
 
     def print_offer(self):
@@ -99,3 +99,35 @@ class DishTags(Base):
 
     dishes = relationship('Dishes', back_populates="dishtags")
     tags = relationship('Tags', back_populates="dishtags")
+
+
+# utils
+
+def read_all_offers(db, offer_id=-1):
+    query_result = db.execute(
+        select(Offers.latitude, Offers.longitude, Offers.price, Dishes.name, Dishes.description, Dishes.how_many_days_before_expiration, Users.name, Users.surname, Offers.id, Offers.state)
+        .join_from(Offers, Dishes, Offers.dish_id == Dishes.id)
+        .join_from(Offers, Users, Offers.seller_id == Users.id).where(Offers.state == OfferState.OPEN)
+    ).all()
+    return convert_offers(query_result, offer_id)
+
+
+def convert_offers(query_result, offer_id=-1):
+    # Convert the result to a list of dictionaries
+    offers = []
+    for row in query_result:
+        if (int(row[8]) == int(offer_id)) or (offer_id == -1):
+            offer = {
+                "latitude": row[0],
+                "longitude": row[1],
+                "price": row[2],
+                "dish_name": row[3],
+                "dish_description": row[4],
+                "dish_expiration_days": row[5],
+                "seller_name": row[6],
+                "seller_surname": row[7],
+                "offer_id": row[8],
+                "offer_state": row[9]
+            }
+            offers.append(offer)
+    return offers

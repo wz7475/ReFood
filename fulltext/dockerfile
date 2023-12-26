@@ -1,0 +1,7 @@
+FROM python:3.9
+
+COPY ./requirements.txt /code/requirements.txt
+COPY ./__init__.py /code/__init__.py
+COPY ./app /code/app
+
+RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt

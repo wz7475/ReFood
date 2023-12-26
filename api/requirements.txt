@@ -2,3 +2,8 @@ fastapi
 uvicorn
 sqlalchemy
 psycopg2-binary
+pika
+elasticsearch
+pydantic
+fastapi_sessions
+bcrypt

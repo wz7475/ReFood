@@ -1,4 +1,3 @@
-SQLALCHEMY_DATABASE_URL = "postgresql://refood:refood@my_postgres/refood_db"
 OFFER_INDEX = "offers"
 ADD_OFFER_QUEUE = "offer_add"
 DELETE_OFFER_QUEUE = "offer_delete"

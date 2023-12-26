@@ -24,7 +24,7 @@ pipeline {
   }
 
   stages {
-    stage('run tests') {
+    stage('Run tests') {
       agent {
         docker { image 'python:3.10' }
       }
@@ -47,9 +47,67 @@ pipeline {
       }
     }
 
-    stage('build images and send to nexus') {
+    stage('Build images') {
       when {
-        branch 'main'
+        expression { 
+          return env.BRANCH_NAME != 'main'
+        }
+      }
+      steps {
+        script {
+          try {
+            updateGitlabCommitStatus name: 'Build docker images', state: 'running'
+            sh 'cd api && docker build -t api .'
+            sh 'echo "api BUILD SUCCESSFUL"'
+            sh 'cd frontend && docker build -t frontend .'
+            sh 'echo "frontend BUILD SUCCESSFUL"'
+            sh 'cd fulltext && docker build -t fulltext .'
+            sh 'echo "fulltext BUILD SUCCESSFUL"'
+            updateGitlabCommitStatus name: 'Build docker images', state: 'success'
+          } catch (Exception e) {
+            if (e instanceof InterruptedException) {
+              updateGitlabCommitStatus name: 'Build docker images', state: 'canceled'  
+            }
+            else {
+              updateGitlabCommitStatus name: 'Build docker images', state: 'failed'
+            }
+            throw e
+          }
+        }
+      }
+    }
+
+    stage('Test connection to nexus') {
+      when {
+        expression { 
+          return env.BRANCH_NAME == 'main'
+        }
+      }
+      steps {
+        script {
+          try {
+            updateGitlabCommitStatus name: 'Test connection to nexus', state: 'running'
+            sh 'docker login maluch.mikr.us:40480 -u ${NEXUS_USER} -p ${NEXUS_PASSWORD}'
+            sh 'echo "LOGIN SUCCESSFUL"'
+            updateGitlabCommitStatus name: 'Test connection to nexus', state: 'success'
+          } catch (Exception e) {
+            if (e instanceof InterruptedException) {
+              updateGitlabCommitStatus name: 'Test connection to nexus', state: 'canceled'  
+            }
+            else {
+              updateGitlabCommitStatus name: 'Test connection to nexus', state: 'failed'
+            }
+            throw e
+          }
+        }
+      }
+    }
+
+    stage('Build images and send to nexus') {
+      when {
+        expression { 
+          return env.BRANCH_NAME == 'main'
+        }
       }
       steps {
         script {
@@ -86,9 +144,12 @@ pipeline {
         }
       }
     }
+
     stage('Deploy application') {
       when {
-        branch 'main'
+        expression { 
+          return env.BRANCH_NAME == 'main'
+        }
       }
       steps {
         script {

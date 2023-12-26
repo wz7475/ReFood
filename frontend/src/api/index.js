@@ -1,17 +1,21 @@
-export const apiAddress = 'http://localhost:8080'
+import { useAppStore } from '@/store/app'
+//export const apiAddress = 'http://maluch.mikr.us:40481'
+export const apiAddress = '/api'
 
-export * from './addUser'
-export * from './deleteUser'
-export * from './readUsers'
+export const apiFetch = async (endpoint, options) => {
+    const appStore = useAppStore()
+    return await fetch(`${apiAddress}/${endpoint}`, options).then((res) => {
+        if (res.status === 403) {
+            appStore.logout()
+            throw new Error('session expired')
+        }
+        if (res.ok) return res.json()
+        return Promise.reject(res)
+    })
+}
 
-export * from './addAddress'
-export * from './deleteAddress'
-export * from './readAddresses'
-
-export * from './addDish'
-export * from './deleteDish'
-export * from './readDishes'
-
+export * from './login'
+export * from './register'
+export * from './myOffers'
 export * from './addOffer'
-export * from './deleteOffer'
-export * from './readOffers'
+export * from './offerDetails'

@@ -2,6 +2,7 @@
 import { useAppStore } from '@/store/app'
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { login, register } from '@/api'
 const route = useRoute()
 const router = useRouter()
 const appStore = useAppStore()
@@ -15,18 +16,30 @@ const isRegister = computed({
     },
 })
 
-const login = ref('')
+const loginVal = ref('')
 const name = ref('')
 const surname = ref('')
 const phoneNumber = ref('')
 const password = ref('')
 const confirmPassword = ref('')
 
-const submitLogin = () => {
+const submitLogin = async () => {
+    await login(loginVal.value, password.value)
+
     appStore.signedIn = true
     router.push({ name: 'dashboard' })
 }
-const submitRegister = () => {
+const submitRegister = async () => {
+    if (password.value !== confirmPassword.value) return
+
+    await register(
+        name.value,
+        surname.value,
+        loginVal.value,
+        password.value,
+        phoneNumber.value
+    )
+
     appStore.signedIn = true
     router.push({ name: 'dashboard' })
 }
@@ -49,7 +62,7 @@ const submitRegister = () => {
             </v-tabs>
 
             <v-text-field
-                v-model="login"
+                v-model="loginVal"
                 label="Login"
                 required
                 hide-details

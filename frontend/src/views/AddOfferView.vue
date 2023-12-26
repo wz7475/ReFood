@@ -4,6 +4,8 @@ import { LMap, LTileLayer, LMarker } from '@vue-leaflet/vue-leaflet'
 import { GeoSearchControl, OpenStreetMapProvider } from 'leaflet-geosearch'
 import 'leaflet/dist/leaflet.css'
 import 'leaflet-geosearch/assets/css/leaflet.css'
+import { addOffer } from '@/api'
+import { useRouter } from 'vue-router'
 const zoom = ref(6)
 const map = ref(null)
 
@@ -41,7 +43,35 @@ const spicy = ref(false)
 const glutenFree = ref(false)
 const sugarFree = ref(false)
 
-const submit = () => {}
+const dishName = ref('')
+const description = ref('')
+const price = ref('')
+
+const router = useRouter()
+
+const submit = async () => {
+    const tags = []
+    if (vege.value) tags.push(0)
+    if (spicy.value) tags.push(1)
+    if (glutenFree.value) tags.push(2)
+    if (sugarFree.value) tags.push(3)
+
+    const offerId = await addOffer(
+        position.value.lat,
+        position.value.lng,
+        dishName.value,
+        description.value,
+        parseFloat(price.value),
+        tags
+    )
+
+    router.push({
+        name: 'offerDetails',
+        params: {
+            id: offerId,
+        },
+    })
+}
 </script>
 
 <template>
@@ -80,21 +110,21 @@ const submit = () => {}
             class="ma-auto"
         >
             <v-text-field
-                v-model="login"
+                v-model="dishName"
                 label="Dish name"
                 required
                 hide-details
                 class="ma-2"
             />
             <v-textarea
-                v-model="login"
+                v-model="description"
                 label="Description"
                 required
                 hide-details
                 class="ma-2"
             />
             <v-text-field
-                v-model="login"
+                v-model="price"
                 label="Price"
                 suffix="zł"
                 required

@@ -1,41 +1,13 @@
 <script setup>
+import { searchOffers } from '@/api'
 import OfferSearchBar from '@/components/OfferSearchBar.vue'
-import { ref } from 'vue'
+import { computed } from 'vue'
+import { watch } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+const route = useRoute()
 
-const results = ref([
-    {
-        id: 1,
-        distance: 123.4,
-        price: 15.0,
-        dishName: 'Pierogi',
-        sellerName: 'Kuba Zszywacz',
-        tags: ['sugarFree', 'vege'],
-    },
-    {
-        id: 2,
-        distance: 50.1,
-        price: 100.0,
-        dishName: 'Barszcz',
-        sellerName: 'Jan Dziurkacz',
-        tags: ['glutenFree'],
-    },
-    {
-        id: 3,
-        distance: 1.1,
-        price: 1.0,
-        dishName: 'Spaghetti',
-        sellerName: 'Andrzej Pożar',
-        tags: ['spicy'],
-    },
-    {
-        id: 4,
-        distance: 0.5,
-        price: 0.1,
-        dishName: 'Woda',
-        sellerName: 'Kuba Rozpruwacz',
-        tags: ['sugarFree', 'vege', 'spicy', 'glutenFree'],
-    },
-])
+const data = ref([])
 
 const chipConfig = {
     vege: { text: 'Vege', color: 'green', icon: 'mdi-sprout' },
@@ -51,6 +23,23 @@ const chipConfig = {
         icon: 'mdi-cube-off-outline',
     },
 }
+
+const results = computed(() =>
+    data.value.filter((offer) =>
+        JSON.parse(route.query.options || '[]').every((tag) =>
+            offer.tags.includes(tag)
+        )
+    )
+)
+
+const getResult = async () => {
+    data.value = []
+    data.value = await searchOffers(route.params.query)
+}
+
+watch(route, getResult)
+
+onMounted(getResult)
 </script>
 
 <template>

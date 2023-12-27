@@ -43,6 +43,10 @@ const submitRegister = async () => {
     appStore.signedIn = true
     router.push({ name: 'dashboard' })
 }
+
+const submit = computed(() =>
+    route.name === 'register' ? submitRegister : submitLogin
+)
 </script>
 
 <template>
@@ -67,6 +71,7 @@ const submitRegister = async () => {
                 required
                 hide-details
                 class="ma-2"
+                @keyup.enter="submit"
             />
             <v-expand-transition>
                 <v-text-field
@@ -76,6 +81,7 @@ const submitRegister = async () => {
                     required
                     hide-details
                     class="ma-2"
+                    @keyup.enter="submit"
                 />
             </v-expand-transition>
             <v-expand-transition>
@@ -86,6 +92,7 @@ const submitRegister = async () => {
                     required
                     hide-details
                     class="ma-2"
+                    @keyup.enter="submit"
                 />
             </v-expand-transition>
             <v-expand-transition>
@@ -96,6 +103,7 @@ const submitRegister = async () => {
                     required
                     hide-details
                     class="ma-2"
+                    @keyup.enter="submit"
                 />
             </v-expand-transition>
 
@@ -105,6 +113,7 @@ const submitRegister = async () => {
                 required
                 hide-details
                 class="ma-2"
+                @keyup.enter="submit"
             />
             <v-expand-transition>
                 <v-text-field
@@ -114,6 +123,7 @@ const submitRegister = async () => {
                     required
                     hide-details
                     class="ma-2"
+                    @keyup.enter="submit"
                 />
             </v-expand-transition>
 
@@ -122,7 +132,7 @@ const submitRegister = async () => {
                     v-show="isRegister"
                     class="w-100"
                     color="secondary"
-                    @click="submitRegister"
+                    @click="submit"
                 >
                     <v-icon
                         icon="mdi-account-plus"
@@ -138,7 +148,7 @@ const submitRegister = async () => {
                     v-show="!isRegister"
                     class="w-100"
                     color="secondary"
-                    @click="submitLogin"
+                    @click="submit"
                 >
                     <v-icon
                         icon="mdi-login"

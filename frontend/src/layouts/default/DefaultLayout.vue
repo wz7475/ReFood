@@ -30,7 +30,7 @@ const items = computed(() =>
               {
                   title: 'Dashboard',
                   to: '/dashboard',
-                  icon: 'mdi-home',
+                  icon: 'mdi-view-dashboard',
               },
               {
                   title: 'Search offers',

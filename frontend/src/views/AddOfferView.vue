@@ -33,7 +33,6 @@ const onReady = (map) => {
 
     map.on('geosearch/showlocation', (val) => {
         position.value = { lat: val.location.y, lng: val.location.x }
-        console.log(val.location, val.location.bounds)
         map.fitBounds(val.location.bounds)
     })
 }
@@ -115,6 +114,7 @@ const submit = async () => {
                 required
                 hide-details
                 class="ma-2"
+                @keyup.enter="submit"
             />
             <v-textarea
                 v-model="description"
@@ -130,6 +130,7 @@ const submit = async () => {
                 required
                 hide-details
                 class="ma-2"
+                @keyup.enter="submit"
             />
 
             <div class="d-flex flex-row justify-center ma-auto ga-1 py-2">

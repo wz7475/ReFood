@@ -1,12 +1,13 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { LMap, LTileLayer, LMarker } from '@vue-leaflet/vue-leaflet'
 import 'leaflet/dist/leaflet.css'
 import 'leaflet-geosearch/assets/css/leaflet.css'
+import { offerDetails, reserveOffer, completeOffer } from '@/api'
+import { useRoute } from 'vue-router'
 const zoom = ref(6)
 const map = ref(null)
 
-const position = ref({ lat: 52.0, lng: 20.0 })
 const defaultPosition = ref({ lat: 52.02, lng: 19.2 })
 
 const chipConfig = {
@@ -24,20 +25,28 @@ const chipConfig = {
     },
 }
 
-const result = {
-    id: 4,
-    distance: 0.5,
-    price: 0.1,
-    dishName: 'Woda',
-    sellerName: 'Kuba Rozpruwacz',
-    tags: ['sugarFree', 'vege', 'spicy', 'glutenFree'],
-    description: 'Extremely refreshing drink suitable for all consumers',
+const result = ref(null)
+
+const route = useRoute()
+
+onMounted(async () => {
+    result.value = await offerDetails(route.params.id)
+})
+
+const doReserve = async () => {
+    await reserveOffer(result.value.id)
+    result.value = await offerDetails(route.params.id)
+}
+const doComplete = async () => {
+    await completeOffer(result.value.id)
+    result.value = await offerDetails(route.params.id)
 }
 </script>
 
 <template>
     <v-responsive class="align-center text-center fill-height">
         <v-card
+            v-if="result"
             class="text-left mx-auto my-4"
             max-width="1000"
         >
@@ -73,8 +82,8 @@ const result = {
                         v-model:zoom="zoom"
                         ref="map"
                         :center="[
-                            position.lat || defaultPosition.lat,
-                            position.lng || defaultPosition.lng,
+                            result.latitude || defaultPosition.lat,
+                            result.longitude || defaultPosition.lng,
                         ]"
                         :useGlobalLeaflet="false"
                     >
@@ -86,7 +95,10 @@ const result = {
 
                         <l-marker
                             visible
-                            :lat-lng="position"
+                            :lat-lng="{
+                                lat: result.latitude || 0.0,
+                                lng: result.longitude || 0.0,
+                            }"
                         ></l-marker>
                     </l-map>
                 </div>
@@ -111,11 +123,39 @@ const result = {
             <v-card-actions>
                 <v-spacer />
                 <v-btn
+                    v-if="result.state === 'open'"
                     color="secondary"
-                    :to="{ name: 'offerDetails', params: { id: result.id } }"
+                    block
+                    variant="elevated"
+                    rounded="xl"
+                    prepend-icon="mdi-chevron-left"
+                    append-icon="mdi-chevron-right"
+                    @click="doReserve"
+                >
+                    Reserve
+                </v-btn>
+                <v-btn
+                    v-if="result.state === 'reserved'"
+                    color="green"
+                    block
+                    variant="elevated"
+                    rounded="xl"
+                    prepend-icon="mdi-chevron-left"
+                    append-icon="mdi-chevron-right"
+                    @click="doComplete"
+                >
+                    Confirm
+                </v-btn>
+                <v-btn
+                    v-if="result.state === 'complete'"
+                    color="grey"
+                    block
+                    variant="elevated"
+                    rounded="xl"
+                    prepend-icon="mdi-chevron-left"
                     append-icon="mdi-chevron-right"
                 >
-                    Details
+                    Order complete
                 </v-btn>
             </v-card-actions>
         </v-card>

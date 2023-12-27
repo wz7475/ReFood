@@ -1,43 +1,14 @@
 <script setup>
-import { ref } from 'vue'
+import { myOffers } from '@/api'
+import { computed } from 'vue'
+import { ref, onMounted } from 'vue'
 
 const status = ref('open')
 
-const results = ref([
-    {
-        id: 1,
-        distance: 123.4,
-        price: 15.0,
-        dishName: 'Pierogi',
-        sellerName: 'Kuba Zszywacz',
-        tags: ['sugarFree', 'vege'],
-    },
-    {
-        id: 2,
-        distance: 50.1,
-        price: 100.0,
-        dishName: 'Barszcz',
-        sellerName: 'Jan Dziurkacz',
-        tags: ['glutenFree'],
-    },
-    {
-        id: 3,
-        distance: 1.1,
-        price: 1.0,
-        dishName: 'Spaghetti',
-        sellerName: 'Andrzej Pożar',
-        buyerName: 'Tomasz Szkot',
-        tags: ['spicy'],
-    },
-    {
-        id: 4,
-        distance: 0.5,
-        price: 0.1,
-        dishName: 'Woda',
-        sellerName: 'Kuba Rozpruwacz',
-        tags: ['sugarFree', 'vege', 'spicy', 'glutenFree'],
-    },
-])
+const data = ref([])
+const results = computed(() =>
+    data.value.filter((offer) => offer.state === status.value)
+)
 
 const chipConfig = {
     vege: { text: 'Vege', color: 'green', icon: 'mdi-sprout' },
@@ -53,15 +24,19 @@ const chipConfig = {
         icon: 'mdi-cube-off-outline',
     },
 }
+
+onMounted(async () => {
+    data.value = await myOffers()
+})
 </script>
 
 <template>
-    <v-responsive class="align-center text-center fill-height">
+    <div class="align-center text-center fill-height">
         <v-sheet
             :elevation="4"
             max-width="500"
             rounded
-            class="align-center justify-center mx-auto pa-4"
+            class="align-center justify-center mx-auto pa-4 flex-column flex-grow-1"
         >
             <v-tabs
                 v-model="status"
@@ -69,7 +44,7 @@ const chipConfig = {
             >
                 <v-tab value="open">Open</v-tab>
                 <v-tab value="reserved">Reserved</v-tab>
-                <v-tab value="completed">Completed</v-tab>
+                <v-tab value="complete">Completed</v-tab>
             </v-tabs>
 
             <v-card
@@ -126,5 +101,5 @@ const chipConfig = {
                 </v-card-actions>
             </v-card>
         </v-sheet>
-    </v-responsive>
+    </div>
 </template>

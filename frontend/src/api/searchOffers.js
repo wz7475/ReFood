@@ -1,8 +1,8 @@
 import { apiFetch } from '.'
 import { transformOffer } from './transformOffer'
 
-export const myOffers = async () => {
-    return await apiFetch('my_offers', {
+export const searchOffers = async (searchText) => {
+    return await apiFetch(`offers_filter/${searchText}`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',

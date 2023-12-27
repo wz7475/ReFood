@@ -1,4 +1,5 @@
 <script setup>
+import { computed } from 'vue'
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 const router = useRouter()
@@ -6,22 +7,28 @@ const route = useRoute()
 
 const query = ref(route.params.query || '')
 
-const vege = ref(route.query.vege === 'true')
-const spicy = ref(route.query.spicy === 'true')
-const glutenFree = ref(route.query.glutenFree === 'true')
-const sugarFree = ref(route.query.sugarFree === 'true')
+const initialOptions = computed(() => JSON.parse(route.query.options || '[]'))
+
+const vege = ref(initialOptions.value.includes('vege'))
+const spicy = ref(initialOptions.value.includes('spicy'))
+const glutenFree = ref(initialOptions.value.includes('glutenFree'))
+const sugarFree = ref(initialOptions.value.includes('sugarFree'))
 
 const submit = () => {
+    const options = []
+
+    if (vege.value) options.push('vege')
+    if (spicy.value) options.push('spicy')
+    if (glutenFree.value) options.push('glutenFree')
+    if (sugarFree.value) options.push('sugarFree')
+
     router.push({
         name: 'offers',
         params: {
             query: query.value,
         },
         query: {
-            vege: vege.value,
-            spicy: spicy.value,
-            glutenFree: glutenFree.value,
-            sugarFree: sugarFree.value,
+            options: JSON.stringify(options),
         },
     })
 }
@@ -42,6 +49,7 @@ const submit = () => {
                 theme="light"
                 variant="solo"
                 hide-details
+                @keyup.enter="submit"
             ></v-text-field>
 
             <v-btn

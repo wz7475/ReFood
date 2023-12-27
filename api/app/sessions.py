@@ -12,9 +12,8 @@ class SessionData(BaseModel):
 
 
 cookie_params = CookieParameters()
-cookie_params.max_age = 30*60  # 30 minutes max session in seconds
-cookie_params.secure = True
-cookie_params.samesite = None
+cookie_params.max_age = 30 * 60  # 30 minutes max session in seconds
+cookie_params.httponly = False
 
 # Uses UUID
 cookie = SessionCookie(
@@ -29,12 +28,12 @@ backend = InMemoryBackend[UUID, SessionData]()
 
 class BasicVerifier(SessionVerifier[UUID, SessionData]):
     def __init__(
-            self,
-            *,
-            identifier: str,
-            auto_error: bool,
-            backend: InMemoryBackend[UUID, SessionData],
-            auth_http_exception: HTTPException,
+        self,
+        *,
+        identifier: str,
+        auto_error: bool,
+        backend: InMemoryBackend[UUID, SessionData],
+        auth_http_exception: HTTPException,
     ):
         self._identifier = identifier
         self._auto_error = auto_error

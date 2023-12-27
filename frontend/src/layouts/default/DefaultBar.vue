@@ -15,7 +15,11 @@ const appStore = useAppStore()
 
             <v-spacer></v-spacer>
 
-            <v-btn icon>
+            <v-btn
+                icon
+                v-if="appStore.signedIn"
+                @click="appStore.logout"
+            >
                 <v-icon>mdi-login</v-icon>
             </v-btn>
         </v-toolbar>

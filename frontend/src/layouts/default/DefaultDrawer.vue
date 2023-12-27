@@ -1,31 +1,9 @@
 <script setup>
-import { ref } from 'vue'
 import { useAppStore } from '@/store/app'
 
 const appStore = useAppStore()
 
-const items = ref([
-    {
-        title: 'Address',
-        to: '/address',
-        icon: 'mdi-map',
-    },
-    {
-        title: 'User',
-        to: '/user',
-        icon: 'mdi-account',
-    },
-    {
-        title: 'Dish',
-        to: '/dish',
-        icon: 'mdi-food',
-    },
-    {
-        title: 'Offer',
-        to: '/offer',
-        icon: 'mdi-offer',
-    },
-])
+const props = defineProps(['items'])
 </script>
 
 <template>
@@ -38,10 +16,11 @@ const items = ref([
             shaped
         >
             <v-list-item
-                v-for="item in items"
+                v-for="item in props.items"
                 :key="item.title"
                 link
                 :to="item.to"
+                @click="item.action"
             >
                 <template v-slot:prepend>
                     <v-icon>{{ item.icon }}</v-icon>

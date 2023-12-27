@@ -1,5 +1,6 @@
 // Composables
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAppStore } from '@/store/app'
 
 const routes = [
     {
@@ -7,68 +8,91 @@ const routes = [
         component: () => import('@/layouts/default/DefaultLayout.vue'),
         children: [
             {
-                path: '',
-                name: 'Home',
+                path: '/',
+                redirect: { name: 'home' },
+                meta: { requiresAuth: false },
+            },
+            {
+                path: '/home',
+                name: 'home',
                 component: () =>
                     import(
                         /* webpackChunkName: "home" */ '@/views/HomeView.vue'
                     ),
+                meta: { requiresAuth: false },
             },
-        ],
-    },
-    {
-        path: '/user',
-        component: () => import('@/layouts/default/DefaultLayout.vue'),
-        children: [
             {
-                path: '',
-                name: 'User',
+                path: '/login',
+                name: 'login',
                 component: () =>
                     import(
-                        /* webpackChunkName: "home" */ '@/views/UserView.vue'
+                        /* webpackChunkName: "home" */ '@/views/LoginView.vue'
                     ),
+                meta: { requiresAuth: false },
             },
-        ],
-    },
-    {
-        path: '/address',
-        component: () => import('@/layouts/default/DefaultLayout.vue'),
-        children: [
             {
-                path: '',
-                name: 'Address',
+                path: '/register',
+                name: 'register',
                 component: () =>
                     import(
-                        /* webpackChunkName: "home" */ '@/views/AddressView.vue'
+                        /* webpackChunkName: "home" */ '@/views/LoginView.vue'
                     ),
+                meta: { requiresAuth: false },
             },
-        ],
-    },
-    {
-        path: '/dish',
-        component: () => import('@/layouts/default/DefaultLayout.vue'),
-        children: [
+
             {
-                path: '',
-                name: 'Dish',
+                path: '/dashboard',
+                name: 'dashboard',
                 component: () =>
                     import(
-                        /* webpackChunkName: "home" */ '@/views/DishView.vue'
+                        /* webpackChunkName: "home" */ '@/views/DashboardView.vue'
                     ),
+                meta: { requiresAuth: true },
             },
-        ],
-    },
-    {
-        path: '/offer',
-        component: () => import('@/layouts/default/DefaultLayout.vue'),
-        children: [
             {
-                path: '',
-                name: 'Offer',
+                path: '/search',
+                name: 'search',
                 component: () =>
                     import(
-                        /* webpackChunkName: "home" */ '@/views/OfferView.vue'
+                        /* webpackChunkName: "home" */ '@/views/SearchView.vue'
                     ),
+                meta: { requiresAuth: true },
+            },
+            {
+                path: '/offers/:query',
+                name: 'offers',
+                component: () =>
+                    import(
+                        /* webpackChunkName: "home" */ '@/views/OffersView.vue'
+                    ),
+                meta: { requiresAuth: true },
+            },
+            {
+                path: '/offer/:id',
+                name: 'offerDetails',
+                component: () =>
+                    import(
+                        /* webpackChunkName: "home" */ '@/views/OfferDetailsView.vue'
+                    ),
+                meta: { requiresAuth: true },
+            },
+            {
+                path: '/addOffer',
+                name: 'addOffer',
+                component: () =>
+                    import(
+                        /* webpackChunkName: "home" */ '@/views/AddOfferView.vue'
+                    ),
+                meta: { requiresAuth: true },
+            },
+            {
+                path: '/myOffers',
+                name: 'myOffers',
+                component: () =>
+                    import(
+                        /* webpackChunkName: "home" */ '@/views/MyOffersView.vue'
+                    ),
+                meta: { requiresAuth: true },
             },
         ],
     },
@@ -77,6 +101,16 @@ const routes = [
 const router = createRouter({
     history: createWebHistory(process.env.BASE_URL),
     routes,
+})
+
+router.beforeEach((to) => {
+    const appStore = useAppStore()
+
+    if (to.meta.requiresAuth && !appStore.signedIn) {
+        return {
+            name: 'login',
+        }
+    }
 })
 
 export default router

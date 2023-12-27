@@ -13,4 +13,4 @@ RUN apt-get install nginx -y
 COPY --from=build /app/dist /var/www/html/
 COPY ./nginix.conf ./nginix.conf
 EXPOSE 80
-CMD ["nginx", "-c", "./nginix.conf", "-g","daemon off;"]
+CMD ["nginx", "-c", "./nginix.conf"]

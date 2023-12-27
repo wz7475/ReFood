@@ -114,6 +114,7 @@ const submit = computed(() =>
                 hide-details
                 class="ma-2"
                 @keyup.enter="submit"
+                type="password"
             />
             <v-expand-transition>
                 <v-text-field
@@ -124,6 +125,7 @@ const submit = computed(() =>
                     hide-details
                     class="ma-2"
                     @keyup.enter="submit"
+                    type="password"
                 />
             </v-expand-transition>
 

@@ -6,7 +6,8 @@ from fastapi import FastAPI, Body, HTTPException, Depends, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from .logger import get_logger
-from .models import Base, Users, Dishes, Offers, DishTags, OfferState, TagsValues, Tags, read_all_offers, convert_offers, get_user_name, get_user_surname
+from .models import Base, Users, Dishes, Offers, DishTags, OfferState, TagsValues, Tags, read_all_offers, \
+    convert_offers, get_user_name, get_user_surname, Outbox
 from sqlalchemy.sql.functions import current_timestamp
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine, select
@@ -196,7 +197,7 @@ async def read_offers(pattern: str, db: SessionLocal = Depends(get_db), session_
 
 @app.get("/my_offers", dependencies=[Depends(cookie)])
 async def read_offers(db: SessionLocal = Depends(get_db), session_data: SessionData = Depends(verifier)):
-    #TODO add buyer name and surname to samo w offer by id
+    # TODO add buyer name and surname to samo w offer by id
     user_id = db.query(Users).filter_by(login=session_data.username).first().id
     sell_query_result = db.execute(
         select(Offers.latitude, Offers.longitude, Offers.price, Dishes.name, Dishes.description,
@@ -275,9 +276,19 @@ async def add_offer(
         seller_id=user.id,
         creation_date=current_timestamp()
     )
+    offer_es = {
+        "id": offer_id,
+        "dish_name": dish_name,
+        "description": description,
+    }
+
+    indexing_outbox = Outbox(
+        payload=json.dumps(offer_es),
+        routing_key=ADD_OFFER_QUEUE
+    )
     db.add(offer)
-    add_offer_es(offer_id, longitude, latitude, dish_name, description, user.name, user.surname)
-    db.commit()
+    db.add(indexing_outbox)
+    db.commit()  # offer and indexing_outbox have to be in one transaction
     return offer_id
 
 
@@ -479,15 +490,3 @@ async def get_tags_map():
 #         add_dishtag(dish_id, tag_id)
 
 
-# utils
-
-def add_offer_es(offer_id, latitude, longitude, dish_name, description, seller_name, seller_surname):
-    offer = {
-        "id": offer_id,
-        "dish_name": dish_name,
-        "description": description,
-    }
-    connections["add-channel"].basic_publish(exchange='',
-                                             routing_key=ADD_OFFER_QUEUE,
-                                             body=json.dumps(offer))
-    return offer

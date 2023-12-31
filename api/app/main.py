@@ -1,27 +1,22 @@
 import json
 from contextlib import asynccontextmanager
 
-import pika
-from fastapi import FastAPI, Body, HTTPException, Depends, Response
+from fastapi import FastAPI, Body, HTTPException, Depends, Response, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 
 from .logger import get_logger
-from .models import Base, Users, Dishes, Offers, DishTags, OfferState, TagsValues, Tags, read_all_offers, \
+from .models import Base, Users, Dishes, Offers, OfferState, TagsValues, Tags, read_all_offers, \
     convert_offers, get_user_name, get_user_surname, Outbox
 from sqlalchemy.sql.functions import current_timestamp
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine, select
-from elasticsearch import Elasticsearch
-from .cfg import SQLALCHEMY_DATABASE_URL, ADD_OFFER_QUEUE, DELETE_OFFER_QUEUE, OFFER_INDEX
+from sqlalchemy import select
+from .cfg import ADD_OFFER_QUEUE, DELETE_OFFER_QUEUE, OFFER_INDEX
 from .es_tools import get_by_fulltext
 from .connectors import get_rabbitmq_connection, get_es_connection
 from .sessions import SessionData, backend, cookie, verifier
+from .backgroundtasks import send_messages_from_outbox
 from uuid import UUID, uuid4
-from typing import List
 
-# SQLAlchemy configuration
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+from .sqlalchemy import engine, SessionLocal, get_db
 
 connections = {}
 
@@ -54,14 +49,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 @app.get("/test-es-add-offer/{offer_id}")
@@ -237,6 +224,7 @@ async def read_offers(db: SessionLocal = Depends(get_db), session_data: SessionD
 
 @app.post("/offers", dependencies=[Depends(cookie)])
 async def add_offer(
+        background_tasks: BackgroundTasks,
         latitude: float = Body(),
         longitude: float = Body(),
         dish_name: str = Body(),
@@ -284,11 +272,14 @@ async def add_offer(
 
     indexing_outbox = Outbox(
         payload=json.dumps(offer_es),
-        routing_key=ADD_OFFER_QUEUE
+        routing_key=ADD_OFFER_QUEUE,
+        status="pending"
     )
     db.add(offer)
     db.add(indexing_outbox)
     db.commit()  # offer and indexing_outbox have to be in one transaction
+    # TODO add background task to add offer to elastic search
+    background_tasks.add_task(send_messages_from_outbox, connections["add-channel"], connections["logger"])
     return offer_id
 
 

@@ -11,4 +11,4 @@ http://localhost:8080/offers --cookie "cookie.txt"
 
 curl http://localhost:8080/test-es-query/example --cookie "cookie.txt"
 
-curl -X DELETE http://localhost:8080/offers/1 --cookie "cookie.txt"
+curl http://localhost:8080/test-es-query/example --cookie "cookie.txt"

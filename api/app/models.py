@@ -17,6 +17,7 @@ class Outbox(Base):
     id = Column(Integer, Sequence("outbox_id_seq"), primary_key=True, index=True, autoincrement=True)
     payload = Column(String)
     routing_key = Column(String)
+    status = Column(String)
 
 
 class Users(Base):

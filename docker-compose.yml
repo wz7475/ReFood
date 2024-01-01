@@ -93,6 +93,22 @@ services:
     depends_on:
       - elasticsearch
       - rabbitmq
+  tests:
+    build: ./tests
+    volumes:
+      - ./tests/tests:/code
+      - ./config.py:/code/config.py
+    working_dir: /code
+    command: tail -f /dev/null
+    networks:
+      - shared-network
+    depends_on:
+      - postgres
+      - rabbitmq
+      - elasticsearch
+      - add-offers
+      - delete-offers
+
 
 
 

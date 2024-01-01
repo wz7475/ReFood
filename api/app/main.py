@@ -336,7 +336,7 @@ async def read_offer_by_id(offer_id: int, db: SessionLocal = Depends(get_db),
 
 
 @app.delete("/offers/{offer_id}", dependencies=[Depends(cookie)])
-async def delete_offer(offer_id: int, db: SessionLocal = Depends(get_db),
+async def delete_offer(offer_id: int, background_tasks: BackgroundTasks, db: SessionLocal = Depends(get_db),
                        session_data: SessionData = Depends(verifier)):
     offer = db.query(Offers).filter(Offers.id == offer_id).first()
     user_id = db.query(Users).filter_by(login=session_data.username).first().id
@@ -344,8 +344,17 @@ async def delete_offer(offer_id: int, db: SessionLocal = Depends(get_db),
         raise HTTPException(status_code=404, detail="Offer not found")
     if offer.seller_id != user_id:
         raise HTTPException(status_code=403, detail="Can not delete not yours offer")
+
+    indexing_outbox = Outbox(
+        payload=json.dumps({"id": offer_id}),
+        routing_key=DELETE_OFFER_QUEUE,
+        status="pending"
+    )
+
+    db.add(indexing_outbox)
     db.delete(offer)
     db.commit()
+    background_tasks.add_task(send_messages_from_outbox, connections["delete-channel"], connections["logger"])
 
 
 @app.get("/my_dishes", dependencies=[Depends(cookie)])

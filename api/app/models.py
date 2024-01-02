@@ -1,4 +1,5 @@
 import enum
+import json
 
 import bcrypt
 from sqlalchemy import Column, Integer, String, Enum, Sequence, DateTime, ForeignKey, Float, select
@@ -8,6 +9,15 @@ from sqlalchemy.ext.mutable import MutableList
 from .logger import get_logger
 
 Base = declarative_base()
+
+
+class Outbox(Base):
+    __tablename__ = "Outbox"
+
+    id = Column(Integer, Sequence("outbox_id_seq"), primary_key=True, index=True, autoincrement=True)
+    payload = Column(String)
+    routing_key = Column(String)
+    status = Column(String)
 
 
 class Users(Base):
@@ -90,9 +100,6 @@ class Offers(Base):
     dishes = relationship("Dishes", back_populates="offers")
 
 
-
-
-
 class Tags(Base):
     __tablename__ = "Tags"
 
@@ -125,7 +132,8 @@ def read_all_offers(db, offer_id=-1):
     """
     query_result = db.execute(
         select(Offers.latitude, Offers.longitude, Offers.price, Dishes.name, Dishes.description,
-               Dishes.how_many_days_before_expiration, Users.name, Users.surname, Offers.id, Offers.state, Dishes.tags, Offers.buyer_id)
+               Dishes.how_many_days_before_expiration, Users.name, Users.surname, Offers.id, Offers.state, Dishes.tags,
+               Offers.buyer_id)
         .join_from(Offers, Dishes, Offers.dish_id == Dishes.id)
         .join_from(Offers, Users, Offers.seller_id == Users.id).where(Offers.state == OfferState.OPEN)
     ).all()

@@ -1,26 +1,22 @@
 import json
 from contextlib import asynccontextmanager
 
-import pika
-from fastapi import FastAPI, Body, HTTPException, Depends, Response
+from fastapi import FastAPI, Body, HTTPException, Depends, Response, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 
 from .logger import get_logger
-from .models import Base, Users, Dishes, Offers, DishTags, OfferState, TagsValues, Tags, read_all_offers, convert_offers, get_user_name, get_user_surname
+from .models import Base, Users, Dishes, Offers, OfferState, TagsValues, Tags, read_all_offers, \
+    convert_offers, get_user_name, get_user_surname, Outbox
 from sqlalchemy.sql.functions import current_timestamp
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine, select
-from elasticsearch import Elasticsearch
-from .cfg import SQLALCHEMY_DATABASE_URL, ADD_OFFER_QUEUE, DELETE_OFFER_QUEUE, OFFER_INDEX
+from sqlalchemy import select
+from .cfg import ADD_OFFER_QUEUE, DELETE_OFFER_QUEUE, OFFER_INDEX
 from .es_tools import get_by_fulltext
 from .connectors import get_rabbitmq_connection, get_es_connection
 from .sessions import SessionData, backend, cookie, verifier
+from .backgroundtasks import send_messages_from_outbox
 from uuid import UUID, uuid4
-from typing import List
 
-# SQLAlchemy configuration
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+from .sqlalchemy import engine, SessionLocal, get_db
 
 connections = {}
 
@@ -53,14 +49,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 @app.get("/test-es-add-offer/{offer_id}")
@@ -196,7 +184,7 @@ async def read_offers(pattern: str, db: SessionLocal = Depends(get_db), session_
 
 @app.get("/my_offers", dependencies=[Depends(cookie)])
 async def read_offers(db: SessionLocal = Depends(get_db), session_data: SessionData = Depends(verifier)):
-    #TODO add buyer name and surname to samo w offer by id
+    # TODO add buyer name and surname to samo w offer by id
     user_id = db.query(Users).filter_by(login=session_data.username).first().id
     sell_query_result = db.execute(
         select(Offers.latitude, Offers.longitude, Offers.price, Dishes.name, Dishes.description,
@@ -236,6 +224,7 @@ async def read_offers(db: SessionLocal = Depends(get_db), session_data: SessionD
 
 @app.post("/offers", dependencies=[Depends(cookie)])
 async def add_offer(
+        background_tasks: BackgroundTasks,
         latitude: float = Body(),
         longitude: float = Body(),
         dish_name: str = Body(),
@@ -275,9 +264,22 @@ async def add_offer(
         seller_id=user.id,
         creation_date=current_timestamp()
     )
+    offer_es = {
+        "id": offer_id,
+        "dish_name": dish_name,
+        "description": description,
+    }
+
+    indexing_outbox = Outbox(
+        payload=json.dumps(offer_es),
+        routing_key=ADD_OFFER_QUEUE,
+        status="pending"
+    )
     db.add(offer)
-    add_offer_es(offer_id, longitude, latitude, dish_name, description, user.name, user.surname)
-    db.commit()
+    db.add(indexing_outbox)
+    db.commit()  # offer and indexing_outbox have to be in one transaction
+    # TODO add background task to add offer to elastic search
+    background_tasks.add_task(send_messages_from_outbox, connections["add-channel"], connections["logger"])
     return offer_id
 
 
@@ -334,7 +336,7 @@ async def read_offer_by_id(offer_id: int, db: SessionLocal = Depends(get_db),
 
 
 @app.delete("/offers/{offer_id}", dependencies=[Depends(cookie)])
-async def delete_offer(offer_id: int, db: SessionLocal = Depends(get_db),
+async def delete_offer(offer_id: int, background_tasks: BackgroundTasks, db: SessionLocal = Depends(get_db),
                        session_data: SessionData = Depends(verifier)):
     offer = db.query(Offers).filter(Offers.id == offer_id).first()
     user_id = db.query(Users).filter_by(login=session_data.username).first().id
@@ -342,8 +344,17 @@ async def delete_offer(offer_id: int, db: SessionLocal = Depends(get_db),
         raise HTTPException(status_code=404, detail="Offer not found")
     if offer.seller_id != user_id:
         raise HTTPException(status_code=403, detail="Can not delete not yours offer")
+
+    indexing_outbox = Outbox(
+        payload=json.dumps({"id": offer_id}),
+        routing_key=DELETE_OFFER_QUEUE,
+        status="pending"
+    )
+
+    db.add(indexing_outbox)
     db.delete(offer)
     db.commit()
+    background_tasks.add_task(send_messages_from_outbox, connections["delete-channel"], connections["logger"])
 
 
 @app.get("/my_dishes", dependencies=[Depends(cookie)])
@@ -479,15 +490,3 @@ async def get_tags_map():
 #         add_dishtag(dish_id, tag_id)
 
 
-# utils
-
-def add_offer_es(offer_id, latitude, longitude, dish_name, description, seller_name, seller_surname):
-    offer = {
-        "id": offer_id,
-        "dish_name": dish_name,
-        "description": description,
-    }
-    connections["add-channel"].basic_publish(exchange='',
-                                             routing_key=ADD_OFFER_QUEUE,
-                                             body=json.dumps(offer))
-    return offer

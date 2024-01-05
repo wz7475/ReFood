@@ -7,6 +7,9 @@ from elasticsearch import Elasticsearch
 from elasticsearch import ConnectionError
 from .cfg import ELASTIC_URL, RABBITHOST, RECONNECT_INTERVAL_IN_S, AVAIBLE_RECONNECTS
 
+
+connections = {}
+
 def get_rabbitmq_connection(logger: logging.Logger):
     for i in range(AVAIBLE_RECONNECTS):
         try:

@@ -1,7 +1,6 @@
-from fastapi import BackgroundTasks
 from sqlalchemy.orm import Session
 
-from .models import Outbox
+from ..routers.models.offers import Outbox
 from .sqlalchemy import engine
 from .logger import get_logger
 

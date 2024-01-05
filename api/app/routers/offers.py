@@ -9,6 +9,7 @@ from ..models.dishes import TagsValues, add_dish
 from ..utils.cfg import DELETE_OFFER_QUEUE, OFFER_INDEX
 from ..utils.backgroundtasks import send_messages_from_outbox
 from ..utils.connectors import connections
+from typing import List
 import json
 
 router = APIRouter(
@@ -66,7 +67,7 @@ async def add_offer(
         description: str = Body(),
         price: int = Body(),  # price in grosze
         how_many_days_before_expiration: float = Body(),
-        tags: list[int] = Body(),
+        tags: List[int] = Body(),
         db: SessionLocal = Depends(get_db),
         session_data: SessionData = Depends(verifier)
 ):

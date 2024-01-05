@@ -15,6 +15,7 @@ from .routers import offers, dishes
 
 
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger = get_logger()

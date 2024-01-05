@@ -15,7 +15,7 @@ router = APIRouter(
 
 @router.get("/mine")
 async def read_offers(db: SessionLocal = Depends(get_db), session_data: SessionData = Depends(verifier)):
-    user_id = get_user_by_username(session_data.username)
+    user_id = get_user_by_username(session_data.username, db)
     dishes = db.query(Dishes).filter_by(author_id=int(user_id)).all()
     return dishes
 
@@ -23,7 +23,7 @@ async def read_offers(db: SessionLocal = Depends(get_db), session_data: SessionD
 @router.get("/{dish_id}", dependencies=[Depends(cookie)])
 async def read_dishes_by_id(dish_id: int, db: SessionLocal = Depends(get_db),
                             session_data: SessionData = Depends(verifier)):
-    user_id = get_user_by_username(session_data.username)
+    user_id = get_user_by_username(session_data.username, db)
     dish = db.query(Dishes).filter(Dishes.id == dish_id).filter_by(author_id=int(user_id)).all()
     if not dish:
         raise HTTPException(status_code=404, detail="Dish not found")
@@ -39,7 +39,7 @@ async def delete_dish(dish_id: int, db: SessionLocal = Depends(get_db)):
     db.commit()
 
 
-@router.post("/dishes", dependencies=[Depends(cookie)])
+@router.post("/add", dependencies=[Depends(cookie)])
 async def add_dish(
         name: str = Body(),
         description: str = Body(),

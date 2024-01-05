@@ -21,7 +21,8 @@ router = APIRouter(
 
 @router.get("/")
 async def read_offers(db: SessionLocal = Depends(get_db), session_data: SessionData = Depends(verifier)):
-    offers = read_all_open_offers(db)
+    offers_db = read_all_open_offers(db)
+    offers = convert_offers(offers_db)
     return offers
 
 
@@ -40,23 +41,23 @@ async def read_offers(pattern: str, db: SessionLocal = Depends(get_db), session_
 
 @router.get("/mine")
 async def read_offers(db: SessionLocal = Depends(get_db), session_data: SessionData = Depends(verifier)):
-    user = get_user_by_username(session_data.username)
+    user = get_user_by_username(session_data.username, db)
 
-    sell_query_result = read_sold_offers(user.id)
+    sell_query_result = read_sold_offers(user.id, db)
     sell_offers = convert_offers(sell_query_result)
 
-    buy_query_result = read_bought_offers(db, user.id)
+    buy_query_result = read_bought_offers(user.id, db)
     buy_offers = convert_offers(buy_query_result)
 
     offers = []
     for offer in sell_offers:
-        offers.append(add_users(offer, selling=True))
+        offers.append(add_users(offer, selling=True, db=db))
     for offer in buy_offers:
-        offers.append(add_users(offer, selling=False))
+        offers.append(add_users(offer, selling=False, db=db))
     return offers
 
 
-@router.post("/offers")
+@router.post("/")
 async def add_offer(
         background_tasks: BackgroundTasks,
         latitude: float = Body(),
@@ -69,7 +70,7 @@ async def add_offer(
         db: SessionLocal = Depends(get_db),
         session_data: SessionData = Depends(verifier)
 ):
-    user = get_user_by_username(session_data.username)
+    user = get_user_by_username(session_data.username, db)
 
     enum_tags = []
     for tag_val in tags:
@@ -82,7 +83,7 @@ async def add_offer(
     return offer_id
 
 
-@router.post("/offers_dish")
+@router.post("/dish")
 async def add_offer(
         dish_id: int = Body(),
         latitude: float = Body(),
@@ -91,7 +92,7 @@ async def add_offer(
         db: SessionLocal = Depends(get_db),
         session_data: SessionData = Depends(verifier)
 ):
-    user = get_user_by_username(session_data.username)
+    user = get_user_by_username(session_data.username, db)
 
     # valid if dish exists
     if not db.query(Dishes).filter(Dishes.id == dish_id).first():
@@ -139,25 +140,25 @@ async def delete_offer(offer_id: int, background_tasks: BackgroundTasks, db: Ses
     background_tasks.add_task(send_messages_from_outbox, connections["delete-channel"], connections["logger"])
 
 
-@router.get("/complete_offer/{offer_id}", dependencies=[Depends(cookie)])
+@router.get("/complete/{offer_id}", dependencies=[Depends(cookie)])
 async def complete_offer(
         offer_id: int,
         db: SessionLocal = Depends(get_db),
         session_data: SessionData = Depends(verifier)
 ):
-    user = get_user_by_username(session_data.username)
+    user = get_user_by_username(session_data.username, db)
     if not change_offer_state(db, offer_id, user.id, OfferState.COMPLETED):
         HTTPException(status_code=404, detail="Offer not found")
     return "ok"
 
 
-@router.post("/reserve_offer", dependencies=[Depends(cookie)])
+@router.post("/reserve", dependencies=[Depends(cookie)])
 async def reserve_offer(
         offer_id: int = Body(),
         db: SessionLocal = Depends(get_db),
         session_data: SessionData = Depends(verifier)
 ):
-    user = get_user_by_username(session_data.username)
+    user = get_user_by_username(session_data.username, db)
     if not change_offer_state(db, offer_id, user.id, OfferState.RESERVED):
         HTTPException(status_code=404, detail="Offer not found")
     return "ok"

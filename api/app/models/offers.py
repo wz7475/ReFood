@@ -88,6 +88,8 @@ def read_all_offers(db):
 def convert_offers(query_result, offer_id=-1):
     # Convert the result to a list of dictionaries
     offers = []
+    if query_result is None:
+        return offers
     for row in query_result:
         if (int(row[8]) == int(offer_id)) or (offer_id == -1):
             offer = {
@@ -109,7 +111,7 @@ def convert_offers(query_result, offer_id=-1):
 
 
 def read_sold_offers(user_id, db):
-    db.execute(
+    return db.execute(
         select(Offers.latitude, Offers.longitude, Offers.price, Dishes.name, Dishes.description,
                Dishes.how_many_days_before_expiration, Users.name, Users.surname, Offers.id, Offers.state, Dishes.tags,
                Offers.buyer_id)
@@ -120,7 +122,7 @@ def read_sold_offers(user_id, db):
 
 
 def read_bought_offers(user_id, db):
-    db.execute(
+    return db.execute(
         select(Offers.latitude, Offers.longitude, Offers.price, Dishes.name, Dishes.description,
                Dishes.how_many_days_before_expiration, Users.name, Users.surname, Offers.id, Offers.state, Dishes.tags,
                Offers.buyer_id)

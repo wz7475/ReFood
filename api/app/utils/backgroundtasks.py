@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from ..routers.models.offers import Outbox
+from ..models.offers import Outbox
 from .sqlalchemy import engine
 from .logger import get_logger
 

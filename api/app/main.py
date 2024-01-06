@@ -4,14 +4,16 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Body, HTTPException, Depends, Response
 
 from .utils.logger import get_logger
-from .utils.cfg import ADD_OFFER_QUEUE, DELETE_OFFER_QUEUE
+from .utils.cfg import ADD_OFFER_QUEUE, DELETE_OFFER_QUEUE, OFFER_INDEX
 from .utils.connectors import get_rabbitmq_connection, get_es_connection, connections
 from .utils.sessions import SessionData, backend, cookie, verifier
 from .utils.sqlalchemy import engine, SessionLocal, get_db
 from .models.shered import Base
 from .models.users import Users
+from .models.dishes import get_tags_map_low
 from uuid import UUID, uuid4
 from .routers import offers, dishes
+from .utils.es_tools import get_all_data # TODO delete
 
 
 
@@ -42,7 +44,8 @@ app.include_router(dishes.router)
 
 @app.get("/")
 async def root():
-    return {"message": "Hello Refood multiple files"}
+    return get_all_data(connections["es"], OFFER_INDEX)
+    # return {"message": "Hello Refood multiple files"}
 
 
 # Sesions
@@ -105,10 +108,4 @@ async def delete_user(session_data: SessionData = Depends(verifier), db: Session
 
 @app.get("/get_tags_map")
 async def get_tags_map():
-    return {
-        0: "vege",
-        1: "glutenFree",
-        2: "sugarFree",
-        3: "shouldBeWarm",
-        4: "spicy"
-    }
+    return get_tags_map_low()

@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 
 from ..main import app
+from ..models.dishes import get_tags_map_low
 
 client = TestClient(app)
 
@@ -12,12 +13,10 @@ def test_read_main():
 
 
 def test_read_tags():
-    response = client.get("/get_tags_map")
-    assert response.status_code == 200
-    assert response.json() == {
-                                "0": "vege",
-                                "1": "glutenFree",
-                                "2": "sugarFree",
-                                "3": "shouldBeWarm",
-                                "4": "spicy"
+    assert get_tags_map_low() == {
+                                    0: "vegetarian",
+                                    1: "gluten free",
+                                    2: "sugar free",
+                                    3: "should be warm",
+                                    4: "spicy"
                                 }

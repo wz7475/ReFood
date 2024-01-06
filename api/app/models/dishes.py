@@ -11,7 +11,7 @@ class TagsValues(enum.Enum):
     VEGETARIAN = 0
     GLUTEN_FREE = 1
     SUGAR_FREE = 2
-    SHOULD_BE_EATEN_WARM = 3
+    SHOULD_BE_WARM = 3
     SPICY = 4
 
 
@@ -43,3 +43,10 @@ def add_dish(db, name, description, how_many_days_before_expiration, author_id, 
     db.add(dish)
     db.commit()
     return dish_id
+
+
+def get_tags_map_low():
+    tags = {}
+    for tag in TagsValues:
+        tags[tag.value] = tag.name.lower().replace("_", " ")
+    return tags

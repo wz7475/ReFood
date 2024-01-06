@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Body, BackgroundTasks
 from ..utils.sessions import cookie, verifier, SessionData
 from ..utils.sqlalchemy import SessionLocal, get_db
-from ..utils.es_tools import get_by_fulltext
+from ..utils.es_tools import get_by_fulltext, get_by_fulltext_distance
 from ..models.offers import (read_all_open_offers, Offers, Dishes, convert_offers, Outbox, read_bought_offers,
                              read_sold_offers, add_users, add_offer_db, read_all_offers, OfferState, change_offer_state)
 from ..models.users import Users, get_user_name, get_user_surname, get_user_by_username
@@ -27,10 +27,21 @@ async def read_offers(db: SessionLocal = Depends(get_db), session_data: SessionD
     return offers
 
 
-@router.get("/filter/{pattern}")
-async def read_offers(pattern: str, db: SessionLocal = Depends(get_db), session_data: SessionData = Depends(verifier)):
+@router.post("/filter")
+async def read_offers(
+        pattern: str = Body(),
+        tags: List[int] = Body(),
+        distance: float = Body(),
+        lat: float = Body(),
+        lon: float = Body(),
+        db: SessionLocal = Depends(get_db),
+        session_data: SessionData = Depends(verifier)):
     fields = ["description", "dish_name"]
-    result = get_by_fulltext(connections["es"], OFFER_INDEX, fields, pattern)
+    if distance > 0:
+        result = get_by_fulltext_distance(connections["es"], OFFER_INDEX, fields, pattern, tags, distance, lat, lon)
+    else:
+        result = get_by_fulltext(connections["es"], OFFER_INDEX, fields, pattern, tags)
+    # return result
     hits = result["hits"]["hits"]
     offers = []
     for hit in hits:

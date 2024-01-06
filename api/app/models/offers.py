@@ -148,12 +148,24 @@ def get_offer_es(db, offer: Offers):
             "id": offer.id,
             "dish_name": dish.name,
             "description": dish.description,
+            "tags": [x.value for x in dish.tags],
+            "location": {
+                "lat": offer.latitude,
+                "lon": offer.longitude
+            }
         }
     return {
         "id": offer.id,
         "dish_name": "",
         "description": "",
+        "tags": [],
+        "location":
+            {
+                "lat": 0,
+                "lon": 0
+            }
     }
+
 
 def get_index_outbox(db, offer):
     return Outbox(

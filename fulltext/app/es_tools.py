@@ -10,8 +10,15 @@ def delete_indexed_document(es, index_name, doc_id):
 
 
 def create_index(es, index_name, logger: logging.Logger):
+    mapping = {
+        "properties": {
+            "location": {
+                "type": "geo_point"
+            },
+        }
+    }
     if not es.indices.exists(index=index_name):
-        es.indices.create(index=index_name)
+        es.indices.create(index=index_name, body={"mappings": mapping})
         logger.info(f"Index '{index_name}' created.")
     else:
         logger.info(f"Index '{index_name}' already exists.")

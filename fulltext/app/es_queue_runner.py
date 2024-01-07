@@ -3,12 +3,11 @@ import logging
 from time import sleep
 
 import pika
-from elasticsearch import Elasticsearch
+from elasticsearch import Elasticsearch, ConnectionError
 from logger import get_logger
 from es_tools import create_index, index_document, delete_indexed_document
 from cfg import OFFER_INDEX, ADD_OFFER_QUEUE, DELETE_OFFER_QUEUE, ELASTIC_URL, RABBITHOST, RECONNECT_INTERVAL_IN_S, \
     AVAIBLE_RECONNECTS
-from elasticsearch import ConnectionError
 
 logger = get_logger()
 
@@ -25,6 +24,7 @@ def add_callback(ch, method, properties, body):
     document = json.loads(body)
     document_id = document["id"]
     document.pop("id")
+    logger.info(document)
     index_document(es, OFFER_INDEX, document, document_id)
     logger.info(f"Added document: {document_id}")
     ch.basic_ack(delivery_tag=method.delivery_tag)

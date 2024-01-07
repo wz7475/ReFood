@@ -21,8 +21,7 @@ class Dishes(Base):
     id = Column(Integer, Sequence("dishes_id_seq"), primary_key=True, index=True, autoincrement=True)
     name = Column(String)
     description = Column(String)
-    how_many_days_before_expiration = Column(
-        Float)  # TODO w sumie nie ma sensu, powinna być data i liczone na runtime bo tak to kto zmieniejsza to, niby można od czasu wstawienia, ale nie no sus, nie podoba mi się
+    how_many_days_before_expiration = Column(Float)
     author_id = Column(Integer, ForeignKey("Users.id"))
     tags = Column(MutableList.as_mutable(ARRAY(Enum(TagsValues))), nullable=True)
 

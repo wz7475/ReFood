@@ -19,18 +19,16 @@ services:
     build: ./api
     ports:
       - "8080:80"
-    command: bash -c "python seed_db.py && uvicorn app.main:app --host 0.0.0.0 --port 80"
+    command: bash -c "uvicorn app.main:app --host 0.0.0.0 --port 80"
     volumes:
       - ./api/app:/code/app
-      - ./api/seed_db.py:/code/seed_db.py
       - ./api/__init__.py:/code/__init__.py
       - ./config.py:/code/config.py
     depends_on:
       - postgres
       - rabbitmq
       - elasticsearch
-      - add-offers
-      - delete-offers
+      - fulltext
     networks:
       - shared-network
   
@@ -66,33 +64,35 @@ services:
     healthcheck:
       test: "exit 0"
 
-  add-offers:
+  fulltext:
     build: ./fulltext
-    container_name: add-offers
+    container_name: fulltext
     volumes:
       - ./fulltext/app:/code
       - ./config.py:/code/config.py
     working_dir: /code
-    command: python3 es_queue_runner.py --mode add
+    command: python3 es_queue_runner.py
     networks:
       - shared-network
     depends_on:
       - elasticsearch
       - rabbitmq
 
-  delete-offers:
-    build: ./fulltext
-    container_name: delete-offers
+  tests:
+    build: ./tests
     volumes:
-      - ./fulltext/app:/code
+      - ./tests/tests:/code
       - ./config.py:/code/config.py
     working_dir: /code
-    command: python3 es_queue_runner.py --mode delete
+    command: tail -f /dev/null
     networks:
       - shared-network
     depends_on:
-      - elasticsearch
+      - postgres
       - rabbitmq
+      - elasticsearch
+      - fulltext
+
 
 
 

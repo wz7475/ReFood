@@ -3,13 +3,11 @@ import logging
 from time import sleep
 
 import pika
-import argparse
-from elasticsearch import Elasticsearch
+from elasticsearch import Elasticsearch, ConnectionError
 from logger import get_logger
 from es_tools import create_index, index_document, delete_indexed_document
 from cfg import OFFER_INDEX, ADD_OFFER_QUEUE, DELETE_OFFER_QUEUE, ELASTIC_URL, RABBITHOST, RECONNECT_INTERVAL_IN_S, \
     AVAIBLE_RECONNECTS
-from elasticsearch import ConnectionError
 
 logger = get_logger()
 
@@ -26,6 +24,7 @@ def add_callback(ch, method, properties, body):
     document = json.loads(body)
     document_id = document["id"]
     document.pop("id")
+    logger.info(document)
     index_document(es, OFFER_INDEX, document, document_id)
     logger.info(f"Added document: {document_id}")
     ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -61,17 +60,7 @@ def get_es_connection(index_name, logger: logging.Logger):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", type=str, choices=["add", "delete"], required=True)
-    args = parser.parse_args()
-    if args.mode == "add":
-        callback = add_callback
-        queue = ADD_OFFER_QUEUE
-    elif args.mode == "delete":
-        callback = delete_callback
-        queue = DELETE_OFFER_QUEUE
-    else:
-        raise ValueError("Invalid mode.")
+
 
     # elasticsearch
     es = get_es_connection(OFFER_INDEX, logger)
@@ -81,6 +70,10 @@ if __name__ == '__main__':
         pika.ConnectionParameters(host=RABBITHOST, heartbeat=0)
     )
     channel = connection.channel()
-    channel.queue_declare(queue=queue)
-    channel.basic_consume(queue=queue, on_message_callback=callback, auto_ack=False)
+
+    channel.queue_declare(queue=ADD_OFFER_QUEUE)
+    channel.queue_declare(queue=DELETE_OFFER_QUEUE)
+    channel.basic_consume(queue=ADD_OFFER_QUEUE, on_message_callback=add_callback, auto_ack=False)
+    channel.basic_consume(queue=DELETE_OFFER_QUEUE, on_message_callback=delete_callback, auto_ack=False)
+
     channel.start_consuming()

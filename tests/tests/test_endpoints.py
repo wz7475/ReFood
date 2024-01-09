@@ -3,20 +3,20 @@ from fastapi import HTTPException
 import json
 
 from cfg_tests import SESSION_COOKIE_FIELD, ADDRESS
-from tools import register, login, add_offers, get_my_offers, get_offer_by_id
-
+from tools import register, login, add_offers, get_my_offers, get_offer_by_id, delete_offer_by_id
 
 def test_register_ok():
-    register_response = register('test20', 'test3')
-    assert json.loads(register_response.text) == 'user test20 created'
+    test_login = 'test1'
+    register_response = register(test_login, 'test3')
+    assert json.loads(register_response.text) == f'user {test_login} created'
 
 def test_register_login_used():
-    register_response = register('test20', 'test3')
+    register_response = register('test0', 'test3')
     assert json.loads(register_response.text)['detail'] == 'Username already exists'
 
 def test_login_ok():
-    login_response, cookie = login('test20', 'test3')
-    assert json.loads(login_response.text) == 'created session for test20'
+    login_response, cookie = login('test0', 'test3')
+    assert json.loads(login_response.text) == 'created session for test0'
 
 def test_login_bad_login():
     try:
@@ -33,7 +33,7 @@ def test_login_bad_password():
         assert HTTPException.detail == "Incorrect password"
 
 def test_e2e_add_offer():
-    test_login = 'test29'
+    test_login = 'test35'
     register_response = register(test_login, 'test3')
     assert json.loads(register_response.text) == f'user {test_login} created'
     login_response, cookie = login(test_login, 'test3')
@@ -45,4 +45,10 @@ def test_e2e_add_offer():
     response_get = get_my_offers(cookie)
     assert len(response_get.json()) > 0
     response = get_offer_by_id(cookie, response_offer_id.json())
-    assert response.json()['dish_description'] == "to nmoże są banany"
+    assert response.json()[0]['dish_description'] == "to nmoże są banany"
+    response_delete = delete_offer_by_id(cookie, response_offer_id.json())
+    try:
+        response_get_by_id = get_offer_by_id(cookie, response_offer_id.json())
+    except HTTPException as e:
+        assert e.status_code == 404
+        assert e.detail == "Offer not found"

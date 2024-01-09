@@ -39,7 +39,13 @@ def add_offers(cookie):
     return response
 
 def get_my_offers(cookie):
-    return requests.get(ADDRESS + '/my_offers', cookies={SESSION_COOKIE_FIELD: cookie})
+    return requests.get(ADDRESS + '/offers/mine', cookies={SESSION_COOKIE_FIELD: cookie})
 
 def get_offer_by_id(cookie, offer_id):
     return requests.get(ADDRESS + f'/offers/{offer_id}', cookies={SESSION_COOKIE_FIELD: cookie})
+
+def delete_offer_by_id(cookie, offer_id):
+    return requests.delete(ADDRESS + f'/offers/{offer_id}', cookies={SESSION_COOKIE_FIELD: cookie})
+
+# def reserve_offer(cookie, user_id):
+#     requests.post(ADDRESS + '/offers/reserve', cookies={SESSION_COOKIE_FIELD: cookie})

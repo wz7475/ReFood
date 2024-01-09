@@ -6,7 +6,8 @@ def get_uuid_string():
 
 
 # ADDRESS = 'http://127.0.0.1:8080'
-ADDRESS = 'http://maluch.mikr.us:40481'
+# ADDRESS = 'http://maluch.mikr.us:40481'
+ADDRESS = 'http://api:80'
 LOGIN = get_uuid_string()
 PASSWORD = get_uuid_string()
 SESSION_COOKIE_FIELD = 'sessionId'

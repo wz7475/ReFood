@@ -1,7 +1,7 @@
 import { apiFetch } from '.'
 
 export const reserveOffer = async (id) => {
-    return await apiFetch(`reserve_offer`, {
+    return await apiFetch('offers/reserve', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

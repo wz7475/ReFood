@@ -24,17 +24,23 @@ const chipConfig = {
     },
 }
 
-const results = computed(() =>
-    data.value.filter((offer) =>
-        JSON.parse(route.query.options || '[]').every((tag) =>
-            offer.tags.includes(tag)
-        )
-    )
-)
+const results = computed(() => data.value)
 
 const getResult = async () => {
     data.value = []
-    data.value = await searchOffers(route.params.query)
+    const tags = JSON.parse(route.query.options || '[]').map((tag) =>
+        Object.keys(chipConfig).indexOf(tag)
+    )
+    const lat = parseFloat(route.query.lat || '0.0')
+    const lon = parseFloat(route.query.lon || '0.0')
+    const distance = parseFloat(route.query.distance || '100000.0')
+    data.value = await searchOffers(
+        route.params.query,
+        tags,
+        distance,
+        lat,
+        lon
+    )
 }
 
 watch(route, getResult)

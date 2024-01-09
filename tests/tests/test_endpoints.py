@@ -1,42 +1,51 @@
 import requests
 from fastapi import HTTPException
 import json
+import time
 
 from cfg_tests import SESSION_COOKIE_FIELD, ADDRESS
 from tools import register, login, add_offers, get_my_offers, get_offer_by_id, delete_offer_by_id
 
-def test_register_ok():
-    test_login = 'test1'
-    register_response = register(test_login, 'test3')
-    assert json.loads(register_response.text) == f'user {test_login} created'
+def get_random_login():
+    return str(time.time_ns())
 
-def test_register_login_used():
-    register_response = register('test0', 'test3')
-    assert json.loads(register_response.text)['detail'] == 'Username already exists'
+def test_register_ok_and_register_login_used():
+    test_login = get_random_login()
+    register_response = register(test_login, 'haslo')
+    assert register_response.json() == f'user {test_login} created'
+    register_response = register(test_login, 'test3')
+    assert register_response.json()['detail'] == 'Username already exists'
 
 def test_login_ok():
-    login_response, cookie = login('test0', 'test3')
-    assert json.loads(login_response.text) == 'created session for test0'
+    test_login = get_random_login()
+    register_response = register(test_login, 'haslo')
+    assert register_response.json() == f'user {test_login} created'
+    login_response, cookie = login(test_login, 'haslo')
+    assert json.loads(login_response.text) == f'created session for {test_login}'
 
 def test_login_bad_login():
     try:
-        login_response, cookie = login('bad_login', 'test3555')
+        login_response, cookie = login(get_random_login(), 'test3555')
     except HTTPException as e:
         assert HTTPException.status_code == 401
         assert HTTPException.detail == 'User does not exist'
 
 def test_login_bad_password():
+    test_login = get_random_login()
+    register_response = register(test_login, 'haslo')
+    assert register_response.json() == f'user {test_login} created'
+    
     try:
-        login_response, cookie = login('test4', 'test3555')
+        login_response, cookie = login(test_login, 'zle_haslo')
     except HTTPException as e:
         assert HTTPException.status_code == 401
         assert HTTPException.detail == "Incorrect password"
 
 def test_e2e_add_offer():
-    test_login = 'test35'
-    register_response = register(test_login, 'test3')
+    test_login = get_random_login()
+    register_response = register(test_login, 'haslo')
     assert json.loads(register_response.text) == f'user {test_login} created'
-    login_response, cookie = login(test_login, 'test3')
+    login_response, cookie = login(test_login, 'haslo')
     assert json.loads(login_response.text) == f'created session for {test_login}'
     response = get_my_offers(cookie)
     assert len(response.json()) == 0

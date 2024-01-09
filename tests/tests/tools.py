@@ -26,19 +26,20 @@ def login(login, password):
     session_cookie = response.cookies.get(SESSION_COOKIE_FIELD)
     return response, session_cookie
 
-def add_offers():
-    _, cookie = login('test12', 'test3')
+def add_offers(cookie):
     response = requests.post(ADDRESS + '/offers', json={
         "latitude": 1,
         "longitude": 1,
         "dish_name": "kolejna taggi",
-        "description": "to nmoże  są banany",
+        "description": "to nmoże są banany",
         "price": 1122,
         "how_many_days_before_expiration": 1,
-        "tags": [0, 2]
-    })
+        "tags": [0, 2],
+    }, cookies={SESSION_COOKIE_FIELD: cookie})
     return response
 
-def get_offers():
-    _, cookie = login('test12', 'test3')
-    return requests.get(ADDRESS + '/offers')
+def get_my_offers(cookie):
+    return requests.get(ADDRESS + '/my_offers', cookies={SESSION_COOKIE_FIELD: cookie})
+
+def get_offer_by_id(cookie, offer_id):
+    return requests.get(ADDRESS + f'/offers/{offer_id}', cookies={SESSION_COOKIE_FIELD: cookie})

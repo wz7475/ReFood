@@ -1,14 +1,51 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { LMap, LTileLayer, LMarker } from '@vue-leaflet/vue-leaflet'
+import { LMap, LTileLayer, LMarker, LIcon } from '@vue-leaflet/vue-leaflet'
 import 'leaflet/dist/leaflet.css'
 import 'leaflet-geosearch/assets/css/leaflet.css'
+import defaultIcon from 'leaflet/dist/images/marker-icon.png'
 import { offerDetails, reserveOffer, completeOffer } from '@/api'
 import { useRoute } from 'vue-router'
-const zoom = ref(6)
+const zoom = ref(10)
 const map = ref(null)
 
 const defaultPosition = ref({ lat: 52.02, lng: 19.2 })
+const currentPosition = ref(null)
+
+const onReady = (map) => {
+    navigator.geolocation.getCurrentPosition((position) => {
+        const lat = position.coords.latitude
+        const lng = position.coords.longitude
+        const margin = 0.01
+
+        currentPosition.value = {
+            lat,
+            lng,
+        }
+
+        const latMin = Math.min(
+            currentPosition.value.lat,
+            result.value.latitude
+        )
+        const latMax = Math.max(
+            currentPosition.value.lat,
+            result.value.latitude
+        )
+        const lngMin = Math.min(
+            currentPosition.value.lng,
+            result.value.longitude
+        )
+        const lngMax = Math.max(
+            currentPosition.value.lng,
+            result.value.longitude
+        )
+
+        map.fitBounds([
+            [latMin - margin, lngMin - margin],
+            [latMax + margin, lngMax + margin],
+        ])
+    })
+}
 
 const chipConfig = {
     vege: { text: 'Vege', color: 'green', icon: 'mdi-sprout' },
@@ -82,10 +119,17 @@ const doComplete = async () => {
                         v-model:zoom="zoom"
                         ref="map"
                         :center="[
-                            result.latitude || defaultPosition.lat,
-                            result.longitude || defaultPosition.lng,
+                            (currentPosition &&
+                                (currentPosition.lat + result.latitude) / 2) ||
+                                result.latitude ||
+                                defaultPosition.lat,
+                            (currentPosition &&
+                                (currentPosition.lng + result.longitude) / 2) ||
+                                result.longitude ||
+                                defaultPosition.lng,
                         ]"
                         :useGlobalLeaflet="false"
+                        @ready="onReady"
                     >
                         <l-tile-layer
                             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -100,6 +144,22 @@ const doComplete = async () => {
                                 lng: result.longitude || 0.0,
                             }"
                         ></l-marker>
+
+                        <l-marker
+                            v-if="currentPosition"
+                            visible
+                            v-model:lat-lng="currentPosition"
+                        >
+                            <l-icon
+                                :icon-url="defaultIcon"
+                                :iconSize="[25, 41]"
+                                :iconAnchor="[12, 41]"
+                                :popupAnchor="[1, -34]"
+                                :tooltipAnchor="[16, -28]"
+                                :shadowSize="[41, 41]"
+                                class-name="currentLocMarker"
+                            ></l-icon>
+                        </l-marker>
                     </l-map>
                 </div>
 
@@ -161,3 +221,9 @@ const doComplete = async () => {
         </v-card>
     </v-responsive>
 </template>
+
+<style>
+.currentLocMarker {
+    filter: hue-rotate(120deg);
+}
+</style>

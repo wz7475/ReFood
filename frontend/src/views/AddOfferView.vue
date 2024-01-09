@@ -1,9 +1,10 @@
 <script setup>
 import { ref } from 'vue'
-import { LMap, LTileLayer, LMarker } from '@vue-leaflet/vue-leaflet'
+import { LMap, LTileLayer, LMarker, LIcon } from '@vue-leaflet/vue-leaflet'
 import { GeoSearchControl, OpenStreetMapProvider } from 'leaflet-geosearch'
 import 'leaflet/dist/leaflet.css'
 import 'leaflet-geosearch/assets/css/leaflet.css'
+import defaultIcon from 'leaflet/dist/images/marker-icon.png'
 import { addOffer } from '@/api'
 import { useRouter } from 'vue-router'
 const zoom = ref(6)
@@ -34,6 +35,23 @@ const onReady = (map) => {
     map.on('geosearch/showlocation', (val) => {
         position.value = { lat: val.location.y, lng: val.location.x }
         map.fitBounds(val.location.bounds)
+        console.log(val.location.bounds)
+    })
+
+    navigator.geolocation.getCurrentPosition((position) => {
+        const lat = position.coords.latitude
+        const lng = position.coords.longitude
+        const margin = 0.01
+
+        defaultPosition.value = {
+            lat,
+            lng,
+        }
+
+        map.fitBounds([
+            [lat - margin, lng - margin],
+            [lat + margin, lng + margin],
+        ])
     })
 }
 
@@ -102,6 +120,21 @@ const submit = async () => {
                     draggable
                     v-model:lat-lng="position"
                 ></l-marker>
+
+                <l-marker
+                    visible
+                    v-model:lat-lng="defaultPosition"
+                >
+                    <l-icon
+                        :icon-url="defaultIcon"
+                        :iconSize="[25, 41]"
+                        :iconAnchor="[12, 41]"
+                        :popupAnchor="[1, -34]"
+                        :tooltipAnchor="[16, -28]"
+                        :shadowSize="[41, 41]"
+                        class-name="currentLocMarker"
+                    ></l-icon>
+                </l-marker>
             </l-map>
         </div>
         <div
@@ -200,3 +233,8 @@ const submit = async () => {
         </div>
     </v-responsive>
 </template>
+<style>
+.currentLocMarker {
+    filter: hue-rotate(120deg);
+}
+</style>

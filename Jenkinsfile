@@ -26,13 +26,15 @@ pipeline {
   stages {
     stage('Run tests') {
       agent {
-        docker { image 'python:3.10' }
+        docker { image 'node:18-alpine3.17' }
       }
       steps {
         script {
           try {
             updateGitlabCommitStatus name: 'Run tests', state: 'running'
-            sh 'cd hello-world && pip install -r requirements.txt && pytest test_main.py'
+            sh 'echo "Run frontend tests"'
+            sh 'cd frontend && npm install && npm run test'
+            sh 'echo "End of frontend tests"'
             updateGitlabCommitStatus name: 'Run tests', state: 'success'
           } catch (Exception e) {
             if (e instanceof InterruptedException) {

@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import { onMounted } from 'vue'
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 const router = useRouter()
@@ -13,6 +14,18 @@ const vege = ref(initialOptions.value.includes('vege'))
 const spicy = ref(initialOptions.value.includes('spicy'))
 const glutenFree = ref(initialOptions.value.includes('glutenFree'))
 const sugarFree = ref(initialOptions.value.includes('sugarFree'))
+
+const distance = ref(50.0)
+const location = ref(null)
+
+onMounted(() => {
+    navigator.geolocation.getCurrentPosition((position) => {
+        const lat = position.coords.latitude
+        const lon = position.coords.longitude
+
+        location.value = { lat, lon }
+    })
+})
 
 const submit = () => {
     const options = []
@@ -29,6 +42,9 @@ const submit = () => {
         },
         query: {
             options: JSON.stringify(options),
+            distance: location.value ? distance.value : -1,
+            lat: location.value ? location.value.lat : 0.0,
+            lon: location.value ? location.value.lon : 0.0,
         },
     })
 }
@@ -113,5 +129,15 @@ const submit = () => {
                 Sugar free
             </v-chip>
         </div>
+        <v-slider
+            v-if="location"
+            :style="{ 'max-width': '450px' }"
+            class="ma-auto"
+            min="1"
+            max="1000"
+            label="Distance"
+            thumb-label
+            v-model="distance"
+        ></v-slider>
     </div>
 </template>

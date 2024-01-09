@@ -44,8 +44,8 @@ app.include_router(dishes.router)
 
 @app.get("/")
 async def root():
-    return get_all_data(connections["es"], OFFER_INDEX)
-    # return {"message": "Hello Refood multiple files"}
+    # return get_all_data(connections["es"], OFFER_INDEX)
+    return {"message": "Hello Refood multiple files"}
 
 
 # Sesions

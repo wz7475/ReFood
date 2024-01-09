@@ -49,7 +49,7 @@ class Outbox(Base):
 
 # utils
 
-def read_all_open_offers(db, offer_id=-1):
+def read_open_offers_by_offer_id(db, offer_id):
     """
     reads current open offers
 
@@ -60,6 +60,25 @@ def read_all_open_offers(db, offer_id=-1):
     query_result = db.execute(
         select(Offers.latitude, Offers.longitude, Offers.price, Dishes.name, Dishes.description,
                Dishes.how_many_days_before_expiration, Users.name, Users.surname, Offers.id, Offers.state, Dishes.tags,
+               Offers.buyer_id)
+        .join_from(Offers, Dishes, Offers.dish_id == Dishes.id)
+        .join_from(Offers, Users, Offers.seller_id == Users.id).where((Offers.state == OfferState.OPEN) & (Offers.id == offer_id))
+    ).all()
+    return query_result
+
+
+def read_all_open_offers(db):
+    """
+    reads current open offers
+
+    :param db:
+    :param offer_id:
+    :return:
+    """
+    query_result = db.execute(
+        select(Offers.latitude, Offers.longitude, Offers.price, Dishes.name, Dishes.description,
+               Dishes.how_many_days_before_expiration, Users.name, Users.surname, Offers.id, Offers.state,
+               Dishes.tags,
                Offers.buyer_id)
         .join_from(Offers, Dishes, Offers.dish_id == Dishes.id)
         .join_from(Offers, Users, Offers.seller_id == Users.id).where(Offers.state == OfferState.OPEN)

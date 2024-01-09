@@ -35,6 +35,9 @@ pipeline {
             sh 'echo "Run frontend tests"'
             sh 'cd frontend && npm install && npm run test'
             sh 'echo "End of frontend tests"'
+            sh 'echo "Run backend e2e tests"'
+            sh 'cd tests && ./run_tests_in_docker.sh'
+            sh 'echo "End of backend e2e tests"'
             updateGitlabCommitStatus name: 'Run tests', state: 'success'
           } catch (Exception e) {
             if (e instanceof InterruptedException) {

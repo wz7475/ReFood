@@ -8,7 +8,7 @@ export const addOffer = async (
     price,
     tags
 ) => {
-    return await apiFetch('offers', {
+    return await apiFetch('offers/', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

@@ -2,13 +2,15 @@ from fastapi import APIRouter, Depends, HTTPException, Body, BackgroundTasks
 from ..utils.sessions import cookie, verifier, SessionData
 from ..utils.sqlalchemy import SessionLocal, get_db
 from ..utils.es_tools import get_by_fulltext, get_by_fulltext_distance
-from ..models.offers import (read_all_open_offers, Offers, Dishes, convert_offers, Outbox, read_bought_offers,
+from ..models.offers import (read_all_open_offers, read_open_offers_by_offer_id, Offers, Dishes, convert_offers,
+                             Outbox, read_bought_offers,
                              read_sold_offers, add_users, add_offer_db, read_all_offers, OfferState, change_offer_state)
 from ..models.users import Users, get_user_name, get_user_surname, get_user_by_username
 from ..models.dishes import TagsValues, add_dish
 from ..utils.cfg import DELETE_OFFER_QUEUE, OFFER_INDEX
 from ..utils.backgroundtasks import send_messages_from_outbox
 from ..utils.connectors import connections
+from ..utils.logger import get_logger
 from typing import List
 import json
 
@@ -41,11 +43,13 @@ async def read_offers(
         result = get_by_fulltext_distance(connections["es"], OFFER_INDEX, fields, pattern, tags, distance, lat, lon)
     else:
         result = get_by_fulltext(connections["es"], OFFER_INDEX, fields, pattern, tags)
+    get_logger().info(result)
     # return result
     hits = result["hits"]["hits"]
     offers = []
     for hit in hits:
-        cur_offers = read_all_open_offers(db, hit["_id"])
+        get_logger().info(f"hit id {hit['_id']}")
+        cur_offers = read_open_offers_by_offer_id(db, hit["_id"])
         if cur_offers:
             offers.append(convert_offers(cur_offers)[0])
     return offers

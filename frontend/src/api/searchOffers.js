@@ -11,7 +11,7 @@ export const searchOffers = async (searchText, tags, distance, lat, lon) => {
         body: JSON.stringify({
             pattern: searchText,
             tags,
-            distance,
+            distance: 1000.0 * distance,
             lat,
             lon,
         }),

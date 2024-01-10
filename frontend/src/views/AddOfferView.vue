@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { LMap, LTileLayer, LMarker, LIcon } from '@vue-leaflet/vue-leaflet'
 import { GeoSearchControl, OpenStreetMapProvider } from 'leaflet-geosearch'
 import 'leaflet/dist/leaflet.css'
@@ -7,17 +7,35 @@ import 'leaflet-geosearch/assets/css/leaflet.css'
 import defaultIcon from 'leaflet/dist/images/marker-icon.png'
 import { addOffer } from '@/api'
 import { useRouter } from 'vue-router'
+import { useAppStore } from '@/store/app'
 const zoom = ref(6)
-const map = ref(null)
+const mapRef = ref(null)
+
+const appStore = useAppStore()
 
 const position = ref({ lat: null, lng: null })
-const defaultPosition = ref({ lat: 52.02, lng: 19.2 })
+const defaultPosition = computed(() => ({
+    lat: appStore.currentPosition.latitude,
+    lng: appStore.currentPosition.longitude,
+}))
 
 const onMapClick = (value) => {
     position.value = value.latlng
 }
 
+const fitBounds = () => {
+    const lat = appStore.currentPosition.latitude
+    const lng = appStore.currentPosition.longitude
+    const margin = 0.01
+
+    mapRef.value.fitBounds([
+        [lat - margin, lng - margin],
+        [lat + margin, lng + margin],
+    ])
+}
+
 const onReady = (map) => {
+    mapRef.value = map
     map.doubleClickZoom.disable()
 
     const search = new GeoSearchControl({
@@ -38,22 +56,10 @@ const onReady = (map) => {
         console.log(val.location.bounds)
     })
 
-    navigator.geolocation.getCurrentPosition((position) => {
-        const lat = position.coords.latitude
-        const lng = position.coords.longitude
-        const margin = 0.01
-
-        defaultPosition.value = {
-            lat,
-            lng,
-        }
-
-        map.fitBounds([
-            [lat - margin, lng - margin],
-            [lat + margin, lng + margin],
-        ])
-    })
+    fitBounds()
 }
+
+watch(defaultPosition, fitBounds)
 
 const vege = ref(false)
 const spicy = ref(false)
@@ -99,7 +105,6 @@ const submit = async () => {
         >
             <l-map
                 v-model:zoom="zoom"
-                ref="map"
                 :center="[
                     position.lat || defaultPosition.lat,
                     position.lng || defaultPosition.lng,

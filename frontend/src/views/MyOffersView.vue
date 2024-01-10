@@ -60,7 +60,7 @@ onMounted(async () => {
                         {{ result.price }}zł
                     </v-card-title>
 
-                    <v-card-subtitle>{{ result.distance }}km</v-card-subtitle>
+                    <v-card-subtitle>{{ result.distance() }}km</v-card-subtitle>
                     <v-card-text>
                         <p v-if="result.sellerName">
                             Seller: {{ result.sellerName }}

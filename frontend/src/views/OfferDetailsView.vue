@@ -1,51 +1,51 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { LMap, LTileLayer, LMarker, LIcon } from '@vue-leaflet/vue-leaflet'
 import 'leaflet/dist/leaflet.css'
 import 'leaflet-geosearch/assets/css/leaflet.css'
 import defaultIcon from 'leaflet/dist/images/marker-icon.png'
 import { offerDetails, reserveOffer, completeOffer } from '@/api'
 import { useRoute } from 'vue-router'
+import { useAppStore } from '@/store/app'
 const zoom = ref(10)
-const map = ref(null)
+const mapRef = ref(null)
 
-const defaultPosition = ref({ lat: 52.02, lng: 19.2 })
+const appStore = useAppStore()
+
+const defaultPosition = computed(() => ({
+    lat: appStore.currentPosition.latitude,
+    lng: appStore.currentPosition.longitude,
+}))
 const currentPosition = ref(null)
 
 const onReady = (map) => {
-    navigator.geolocation.getCurrentPosition((position) => {
-        const lat = position.coords.latitude
-        const lng = position.coords.longitude
-        const margin = 0.01
+    mapRef.value = map
 
-        currentPosition.value = {
-            lat,
-            lng,
-        }
-
-        const latMin = Math.min(
-            currentPosition.value.lat,
-            result.value.latitude
-        )
-        const latMax = Math.max(
-            currentPosition.value.lat,
-            result.value.latitude
-        )
-        const lngMin = Math.min(
-            currentPosition.value.lng,
-            result.value.longitude
-        )
-        const lngMax = Math.max(
-            currentPosition.value.lng,
-            result.value.longitude
-        )
-
-        map.fitBounds([
-            [latMin - margin, lngMin - margin],
-            [latMax + margin, lngMax + margin],
-        ])
-    })
+    fitBounds()
 }
+
+const fitBounds = () => {
+    const lat = appStore.currentPosition.latitude
+    const lng = appStore.currentPosition.longitude
+    const margin = 0.01
+
+    currentPosition.value = {
+        lat,
+        lng,
+    }
+
+    const latMin = Math.min(currentPosition.value.lat, result.value.latitude)
+    const latMax = Math.max(currentPosition.value.lat, result.value.latitude)
+    const lngMin = Math.min(currentPosition.value.lng, result.value.longitude)
+    const lngMax = Math.max(currentPosition.value.lng, result.value.longitude)
+
+    mapRef.value.fitBounds([
+        [latMin - margin, lngMin - margin],
+        [latMax + margin, lngMax + margin],
+    ])
+}
+
+watch(defaultPosition, fitBounds)
 
 const chipConfig = {
     vege: { text: 'Vege', color: 'green', icon: 'mdi-sprout' },
@@ -94,7 +94,7 @@ const doComplete = async () => {
                     {{ result.price }}zł
                 </v-card-title>
 
-                <v-card-subtitle>{{ result.distance }}km</v-card-subtitle>
+                <v-card-subtitle>{{ result.distance() }}km</v-card-subtitle>
 
                 <div class="d-flex flex-row ga-1">
                     <v-chip
@@ -117,7 +117,6 @@ const doComplete = async () => {
                 >
                     <l-map
                         v-model:zoom="zoom"
-                        ref="map"
                         :center="[
                             (currentPosition &&
                                 (currentPosition.lat + result.latitude) / 2) ||

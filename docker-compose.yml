@@ -94,8 +94,6 @@ services:
       - fulltext
 
 
-
-
 volumes:
   postgres-data:
   elasticsearch-data:

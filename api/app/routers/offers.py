@@ -164,7 +164,7 @@ async def complete_offer(
 ):
     user = get_user_by_username(session_data.username, db)
     if not change_offer_state(db, offer_id, user.id, OfferState.COMPLETED):
-        HTTPException(status_code=404, detail="Offer not found")
+        raise HTTPException(status_code=404, detail="Offer not found")
     return "ok"
 
 
@@ -176,5 +176,5 @@ async def reserve_offer(
 ):
     user = get_user_by_username(session_data.username, db)
     if not change_offer_state(db, offer_id, user.id, OfferState.RESERVED):
-        HTTPException(status_code=404, detail="Offer not found")
+        raise HTTPException(status_code=404, detail="Offer not found")
     return "ok"

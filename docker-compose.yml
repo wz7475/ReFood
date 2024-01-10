@@ -80,6 +80,7 @@ services:
 
   tests:
     build: ./tests
+    container_name: backend_tests
     volumes:
       - ./tests/tests:/code
       - ./config.py:/code/config.py

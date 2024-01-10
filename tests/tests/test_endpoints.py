@@ -4,7 +4,7 @@ import json
 import time
 
 from cfg_tests import SESSION_COOKIE_FIELD, ADDRESS
-from tools import register, login, add_offers, get_my_offers, get_offer_by_id, delete_offer_by_id
+from tools import register, login, add_offers, get_my_offers, get_offer_by_id, delete_offer_by_id, reserve_offer, complete_offer, get_my_dishes
 
 def get_random_login():
     return str(time.time_ns())
@@ -41,7 +41,7 @@ def test_login_bad_password():
         assert HTTPException.status_code == 401
         assert HTTPException.detail == "Incorrect password"
 
-def test_e2e_add_offer():
+def test_e2e_add_delete_offer():
     test_login = get_random_login()
     register_response = register(test_login, 'haslo')
     assert json.loads(register_response.text) == f'user {test_login} created'
@@ -61,3 +61,22 @@ def test_e2e_add_offer():
     except HTTPException as e:
         assert e.status_code == 404
         assert e.detail == "Offer not found"
+
+def test_e2e_reserve_and_complete_offer():
+    test_login = get_random_login()
+    register_response = register(test_login, 'haslo')
+    assert json.loads(register_response.text) == f'user {test_login} created'
+    login_response, cookie = login(test_login, 'haslo')
+    assert json.loads(login_response.text) == f'created session for {test_login}'
+    response = get_my_offers(cookie)
+    assert len(response.json()) == 0
+    response_offer_id = add_offers(cookie)
+    assert isinstance(response_offer_id.json(), int)
+    response_get = get_my_offers(cookie)
+    assert len(response_get.json()) > 0
+    response = get_offer_by_id(cookie, response_offer_id.json())
+    assert response.json()[0]['dish_description'] == "to nmoże są banany"
+    assert response.json()[0]['offer_state'] == 0 # open
+    response = complete_offer(cookie, response_offer_id.json())
+    response = get_offer_by_id(cookie, response_offer_id.json())
+    assert response.json()[0]['offer_state'] == 2 # completed

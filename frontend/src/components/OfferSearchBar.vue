@@ -1,10 +1,30 @@
 <script setup>
-import { computed } from 'vue'
-import { onMounted } from 'vue'
-import { ref } from 'vue'
+import { LMap, LTileLayer, LMarker, LIcon } from '@vue-leaflet/vue-leaflet'
+import 'leaflet/dist/leaflet.css'
+import 'leaflet-geosearch/assets/css/leaflet.css'
+import defaultIcon from 'leaflet/dist/images/marker-icon.png'
+import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useAppStore } from '@/store/app'
 const router = useRouter()
 const route = useRoute()
+const appStore = useAppStore()
+
+const currentPosition = computed({
+    get() {
+        return {
+            lat: appStore.currentPosition.latitude,
+            lng: appStore.currentPosition.longitude,
+        }
+    },
+
+    set(newVal) {
+        appStore.currentPosition = {
+            latitude: newVal.lat,
+            longitude: newVal.lng,
+        }
+    },
+})
 
 const query = ref(route.params.query || '')
 
@@ -16,16 +36,9 @@ const glutenFree = ref(initialOptions.value.includes('glutenFree'))
 const sugarFree = ref(initialOptions.value.includes('sugarFree'))
 
 const distance = ref(50.0)
-const location = ref(null)
+const useDistance = ref(false)
 
-onMounted(() => {
-    navigator.geolocation.getCurrentPosition((position) => {
-        const lat = position.coords.latitude
-        const lon = position.coords.longitude
-
-        location.value = { lat, lon }
-    })
-})
+const zoom = ref(6)
 
 const submit = () => {
     const options = []
@@ -42,15 +55,48 @@ const submit = () => {
         },
         query: {
             options: JSON.stringify(options),
-            distance: location.value ? distance.value : -1,
-            lat: location.value ? location.value.lat : 0.0,
-            lon: location.value ? location.value.lon : 0.0,
+            distance: useDistance.value ? distance.value : -1,
+            lat: appStore.currentPosition.latitude,
+            lon: appStore.currentPosition.longitude,
         },
     })
 }
 </script>
 <template>
     <div>
+        <div
+            :style="{ height: '50vh', 'max-width': '1000px' }"
+            class="ma-auto"
+        >
+            <l-map
+                v-model:zoom="zoom"
+                :center="[currentPosition.lat, currentPosition.lng]"
+                :useGlobalLeaflet="false"
+            >
+                <l-tile-layer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    layer-type="base"
+                    name="OpenStreetMap"
+                ></l-tile-layer>
+
+                <l-marker
+                    draggable
+                    visible
+                    v-model:lat-lng="currentPosition"
+                >
+                    <l-icon
+                        :icon-url="defaultIcon"
+                        :iconSize="[25, 41]"
+                        :iconAnchor="[12, 41]"
+                        :popupAnchor="[1, -34]"
+                        :tooltipAnchor="[16, -28]"
+                        :shadowSize="[41, 41]"
+                        class-name="currentLocMarker"
+                    ></l-icon>
+                </l-marker>
+            </l-map>
+        </div>
+
         <div
             :style="{ 'max-width': '500px' }"
             class="d-flex flex-row ma-auto my-2"
@@ -129,15 +175,33 @@ const submit = () => {
                 Sugar free
             </v-chip>
         </div>
-        <v-slider
-            v-if="location"
+        <div
             :style="{ 'max-width': '450px' }"
-            class="ma-auto"
-            min="1"
-            max="1000"
-            label="Distance"
-            thumb-label
-            v-model="distance"
-        ></v-slider>
+            class="d-flex flex-row ma-auto"
+        >
+            <v-checkbox-btn
+                class="flex-grow-0"
+                v-model="useDistance"
+            ></v-checkbox-btn>
+            <v-slider
+                class="py-2"
+                min="1"
+                max="100"
+                step="0.1"
+                label="Distance"
+                thumb-label
+                v-model="distance"
+                hide-details
+            >
+                <template v-slot:thumb-label="{ modelValue }">
+                    {{ modelValue }}km
+                </template>
+            </v-slider>
+        </div>
     </div>
 </template>
+<style>
+.currentLocMarker {
+    filter: hue-rotate(120deg);
+}
+</style>

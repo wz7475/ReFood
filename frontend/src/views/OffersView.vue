@@ -1,13 +1,16 @@
 <script setup>
 import { searchOffers } from '@/api'
 import OfferSearchBar from '@/components/OfferSearchBar.vue'
-import { computed } from 'vue'
-import { watch } from 'vue'
-import { ref, onMounted } from 'vue'
+import { watch, ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { getDistanceFromLatLonInKm } from '@/utils/haversine'
 const route = useRoute()
 
-const data = ref([])
+const results = ref([])
+const currentLoc = ref({
+    latitude: parseFloat(route.query.lat || '0.0'),
+    longitude: parseFloat(route.query.lon || '0.0'),
+})
 
 const chipConfig = {
     vege: { text: 'Vege', color: 'green', icon: 'mdi-sprout' },
@@ -24,22 +27,23 @@ const chipConfig = {
     },
 }
 
-const results = computed(() => data.value)
-
 const getResult = async () => {
-    data.value = []
+    results.value = null
     const tags = JSON.parse(route.query.options || '[]').map((tag) =>
         Object.keys(chipConfig).indexOf(tag)
     )
-    const lat = parseFloat(route.query.lat || '0.0')
-    const lon = parseFloat(route.query.lon || '0.0')
-    const distance = parseFloat(route.query.distance || '100000.0')
-    data.value = await searchOffers(
+    currentLoc.value = {
+        latitude: parseFloat(route.query.lat || '0.0'),
+        longitude: parseFloat(route.query.lon || '0.0'),
+    }
+
+    const distance = parseFloat(route.query.distance || '-1')
+    results.value = await searchOffers(
         route.params.query,
         tags,
         distance,
-        lat,
-        lon
+        currentLoc.value.latitude,
+        currentLoc.value.longitude
     )
 }
 
@@ -52,8 +56,15 @@ onMounted(getResult)
     <v-responsive class="align-center text-center fill-height">
         <OfferSearchBar />
 
+        <v-progress-circular
+            v-if="results === null"
+            color="primary"
+            indeterminate
+            :size="50"
+        ></v-progress-circular>
+
         <v-card
-            v-for="result in results"
+            v-for="result in results || []"
             v-bind:key="result.id"
             class="text-left mx-auto my-4"
             max-width="700"
@@ -66,7 +77,8 @@ onMounted(getResult)
                 </v-card-title>
 
                 <v-card-subtitle>
-                    {{ result.distance }}km - {{ result.sellerName }}
+                    {{ result.distance() }}km -
+                    {{ result.sellerName }}
                 </v-card-subtitle>
 
                 <div class="d-flex flex-row ga-1">

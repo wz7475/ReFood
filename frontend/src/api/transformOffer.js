@@ -1,3 +1,6 @@
+import { useAppStore } from '@/store/app'
+import { getDistanceFromLatLonInKm } from '@/utils/haversine'
+
 const offerStateLookup = ['open', 'reserved', 'complete']
 const dishTagLookup = ['vege', 'spicy', 'glutenFree', 'sugarFree']
 
@@ -19,7 +22,17 @@ export const transformOffer = (offer) => {
 
     return {
         id: offer_id,
-        distance: 0.5,
+        distance: () => {
+            const appStore = useAppStore()
+
+            return getDistanceFromLatLonInKm(
+                {
+                    latitude,
+                    longitude,
+                },
+                appStore.currentPosition
+            ).toFixed(1)
+        },
         price,
         dishName: dish_name,
         sellerName: seller_name ? `${seller_name} ${seller_surname}` : null,
